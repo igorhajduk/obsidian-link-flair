@@ -44,12 +44,12 @@ try {
 
   const previewLink = settingsPage.getByRole('button', { name: 'Codex icon size', exact: true });
   await previewLink.hover();
-  assert.equal(await previewLink.evaluate(element => getComputedStyle(element).textDecorationLine), 'none');
+  assert.equal(await previewLink.locator('.link-flair-label').evaluate(element => getComputedStyle(element).borderBottomColor), 'rgba(0, 0, 0, 0)');
   assert.equal(await previewLink.evaluate(element => getComputedStyle(element).color), 'rgb(139, 182, 247)');
   await setting('Underline links on hover').locator('.checkbox-container').click();
   await previewLink.hover();
-  assert.equal(await previewLink.evaluate(element => getComputedStyle(element).textDecorationLine), 'underline');
-  assert.equal(await previewLink.evaluate(element => getComputedStyle(element).textDecorationStyle), 'dashed');
+  assert.equal(await previewLink.locator('.link-flair-label').evaluate(element => getComputedStyle(element).borderBottomColor), 'rgb(139, 182, 247)');
+  assert.equal(await previewLink.locator('.link-flair-label').evaluate(element => getComputedStyle(element).borderBottomStyle), 'dashed');
   console.log('PASS Hover only changes color by default; the toggle enables dashed underlining immediately');
 
   const previewIcon = name => settingsPage.locator(`.link-flair-settings-preview [data-link-flair-app="${name}"]`);
@@ -125,14 +125,14 @@ try {
   assert.equal(await readingCodex.evaluate(element => getComputedStyle(element).getPropertyValue('--link-flair-app-scale')), '1.55');
   const readingLink = page.locator('.markdown-preview-view a.link-flair-link[href^="codex:"]').first();
   await readingLink.hover();
-  assert.equal(await readingLink.evaluate(element => getComputedStyle(element).textDecorationLine), 'underline');
+  assert(await readingLink.locator('.link-flair-label').evaluate(element => getComputedStyle(element).borderBottomColor === getComputedStyle(element).color));
   await page.evaluate(async () => {
     const leaf = app.workspace.getMostRecentLeaf();
     await leaf.setViewState({ type: 'markdown', state: { file: 'Link Flair.md', mode: 'source', source: false } });
   });
   const editorLink = page.locator('.markdown-source-view .link-flair-editor-label').first();
   await editorLink.hover();
-  assert.equal(await editorLink.evaluate(element => getComputedStyle(element).textDecorationLine), 'underline');
+  assert(await editorLink.evaluate(element => getComputedStyle(element).borderBottomColor === getComputedStyle(element).color));
   console.log('PASS Optional hover underlining applies in Reading view and Live Preview');
   console.log('PASS Individual app sizes survive reload and apply in Reading view as well as Live Preview');
 
@@ -143,7 +143,7 @@ try {
   assert.deepEqual(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.appIconScales), {});
   assert.equal(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.underlineOnHover), false);
   await settingsPage.getByRole('button', { name: 'Codex icon size', exact: true }).hover();
-  assert.equal(await settingsPage.getByRole('button', { name: 'Codex icon size', exact: true }).evaluate(element => getComputedStyle(element).textDecorationLine), 'none');
+  assert.equal(await settingsPage.getByRole('button', { name: 'Codex icon size', exact: true }).locator('.link-flair-label').evaluate(element => getComputedStyle(element).borderBottomColor), 'rgba(0, 0, 0, 0)');
   assert.equal(await page.evaluate(() => app.workspace.getMostRecentLeaf().view.editor.getValue()), source);
   console.log('PASS Reset restores defaults and leaves note contents unchanged');
   await settingsPage.screenshot({ path: 'work/appearance-settings-verified.png' });

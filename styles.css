@@ -18,6 +18,13 @@ a.link-flair-link::after { display: none; }
 .markdown-rendered a.link-flair-link { text-decoration: none; }
 .link-flair-link .link-flair-label { white-space: normal; }
 
+/* A transparent border reserves the underline without shifting text on hover. */
+.link-flair-link > .link-flair-label,
+.cm-s-obsidian .link-flair-editor-label {
+  border-bottom: 0.5px dashed transparent;
+  padding-bottom: 2px;
+}
+
 .link-flair-icon {
   display: inline-block;
   width: calc(var(--link-flair-icon-size, 1em) * var(--link-flair-app-scale, 1));
@@ -115,10 +122,11 @@ a.link-flair-link::after { display: none; }
   .cm-s-obsidian .link-flair-editor-label:hover,
   .link-flair-settings-preview button.link-flair-preview-app:hover {
     color: var(--link-flair-color-hover, var(--link-color-hover));
-    text-decoration-line: var(--link-flair-hover-underline, none);
-    text-decoration-style: dashed;
-    text-decoration-thickness: 0.5px;
-    text-underline-offset: 2px;
+  }
+  a.link-flair-link:hover > .link-flair-label,
+  .cm-s-obsidian .link-flair-editor-label:hover,
+  .link-flair-settings-preview button.link-flair-preview-app:hover > .link-flair-label {
+    border-bottom-color: var(--link-flair-hover-underline-color, transparent);
   }
 }
 
