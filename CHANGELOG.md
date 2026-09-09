@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.2] - 2026-09-10
+
+- Use compatible CSS for optional dashed hover underlines, preserving link colors, wrapping, and layout.
+
 ## [0.1.1] - 2026-09-10
 
 - Use a dedicated User-Agent for website metadata requests without reading browser identity.
