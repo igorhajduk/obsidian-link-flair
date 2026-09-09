@@ -76,5 +76,5 @@ export function appearanceCSS(a: Appearance): string {
   const colors = (normal: string, hover: string) => `--link-flair-color:${a.themeColors ? 'var(--link-color)' : normal};--link-flair-color-hover:${a.themeColors ? 'var(--link-color-hover)' : hover};`;
   const appScales = SUPPORTED_APPS.map(([app]) => `.link-flair-icon[data-link-flair-app="${app}"]{--link-flair-app-scale:${a.appIconScales[app] ?? 1};}`).join('');
   return `.theme-light{${colors(a.lightColor, a.lightHover)}}.theme-dark{${colors(a.darkColor, a.darkHover)}}
-  body{--link-flair-hover-underline:${a.underlineOnHover ? 'underline' : 'none'};--link-flair-font-weight:${a.fontWeight};--link-flair-icon-size:${a.iconSize}em;--link-flair-gap:${a.iconGap}px;--link-flair-icon-opacity:${a.iconOpacity};--link-flair-icon-brightness:${a.iconBrightness};--link-flair-icon-saturation:${a.iconSaturation};}${appScales}`;
+  body{--link-flair-hover-underline-color:${a.underlineOnHover ? 'currentColor' : 'transparent'};--link-flair-font-weight:${a.fontWeight};--link-flair-icon-size:${a.iconSize}em;--link-flair-gap:${a.iconGap}px;--link-flair-icon-opacity:${a.iconOpacity};--link-flair-icon-brightness:${a.iconBrightness};--link-flair-icon-saturation:${a.iconSaturation};}${appScales}`;
 }
