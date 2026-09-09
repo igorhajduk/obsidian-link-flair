@@ -57,7 +57,7 @@ export class ReadingFlair extends MarkdownRenderChild {
       if (!target) continue;
       const original = [...anchor.childNodes];
       const originalText = anchor.textContent ?? '';
-      const label = doc.createElement('span');
+      const label = (doc.win as typeof window).createSpan();
       label.className = 'link-flair-label';
       label.append(...original);
       const icon = iconElement(doc, target, this.host.metadata);
@@ -94,13 +94,13 @@ export class ReadingFlair extends MarkdownRenderChild {
     for (const text of nodes) {
       const matches = [...text.data.matchAll(BARE_LINK_PATTERN)].filter(match => classifyLink(trimBareUrl(match[0]))?.kind === 'app');
       if (!matches.length) continue;
-      const fragment = doc.createDocumentFragment();
+      const fragment = (doc.win as typeof window).createFragment();
       let cursor = 0;
       for (const match of matches) {
         if (match.index > 0 && /[\w\\]/.test(text.data[match.index - 1]!)) continue;
         const href = trimBareUrl(match[0]);
         fragment.append(doc.createTextNode(text.data.slice(cursor, match.index)));
-        const anchor = doc.createElement('a');
+        const anchor = (doc.win as typeof window).createEl('a');
         anchor.href = href;
         anchor.className = 'external-link';
         anchor.dataset.linkFlairGenerated = 'true';

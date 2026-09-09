@@ -5,7 +5,7 @@ export function copyWithoutFlair(event: ClipboardEvent, doc: Document): void {
   const range = selection.getRangeAt(0);
   const parent = range.commonAncestorContainer.nodeType === 1 ? range.commonAncestorContainer as Element : range.commonAncestorContainer.parentElement;
   if (!parent || parent.closest('.cm-editor') || !parent.closest('.markdown-preview-view')) return;
-  const wrapper = doc.createElement('div');
+  const wrapper = (doc.win as typeof window).createDiv();
   wrapper.append(range.cloneContents());
   if (!wrapper.querySelector('.link-flair-icon')) return;
   wrapper.querySelectorAll('.link-flair-icon').forEach(icon => icon.remove());

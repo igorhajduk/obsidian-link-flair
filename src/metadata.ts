@@ -2,11 +2,11 @@ import { publicWebUrl } from './links';
 
 export interface WebResponse { status: number; headers: Record<string, string>; text: string; arrayBuffer: ArrayBuffer }
 export type WebRequest = (url: string) => Promise<WebResponse>;
-/** Public metadata endpoints can reject Electron/Obsidian as an embedded client. */
-export function metadataHeaders(userAgent: string): Record<string, string> {
+/** Identify metadata requests without reading or sending the device browser identity. */
+export function metadataHeaders(): Record<string, string> {
   return {
     Accept: 'text/html,image/*;q=0.9,*/*;q=0.1',
-    'User-Agent': userAgent.replace(/\s+(?:obsidian|Electron)\/\S+/gi, ''),
+    'User-Agent': 'LinkFlair',
   };
 }
 export interface CacheEntry { key: string; expires: number; title?: string; icon?: string }
@@ -130,11 +130,11 @@ export class MetadataService {
       const run = () => {
         if (this.disposed || !this.enabled || generation !== this.generation) { resolve(undefined); return; }
         this.active++;
-        const timer = setTimeout(() => resolve(undefined), 5000);
+        const timer = window.setTimeout(() => resolve(undefined), 5000);
         // requestUrl has no AbortSignal. A result deadline does not release
         // the concurrency slot; only settlement of the real request does.
         Promise.resolve().then(() => this.request(url)).then(resolve, () => resolve(undefined)).finally(() => {
-          clearTimeout(timer);
+          window.clearTimeout(timer);
           this.active--;
           this.drain();
         });

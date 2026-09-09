@@ -1,4 +1,4 @@
-import { MarkdownView, Menu, Notice, Plugin, PluginSettingTab, Setting, requestUrl, type Editor, type MarkdownFileInfo } from 'obsidian';
+import { MarkdownView, Menu, Notice, Plugin, PluginSettingTab, Setting, requestUrl, type Editor, type MarkdownFileInfo, type SettingDefinitionItem, type SettingDefinition } from 'obsidian';
 import { linkFlairEditor, refreshFlair, type EditorHost } from './editor';
 import { classifyLink, markdownLink, readBracketLink, referenceId, BARE_LINK_PATTERN, trimBareUrl, type LinkTarget, type SourceLink } from './links';
 import { MetadataService, metadataHeaders, type CacheEntry } from './metadata';
@@ -15,7 +15,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   metadata!: MetadataService;
   settings = loadSettings(undefined);
   private reading = new Set<ReadingFlair>();
-  private saveTimer?: ReturnType<typeof setTimeout>;
+  private saveTimer?: number;
   private documents = new WeakSet<Document>();
   private appearanceStyles = new Map<Document, HTMLStyleElement>();
   get showTitles(): boolean { return this.settings.showTitles; }
@@ -24,8 +24,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   async onload(): Promise<void> {
     const saved = await this.loadData() as SavedData | null;
     this.settings = loadSettings(saved?.settings);
-    // Normalize HTTP headers; this does not detect the operating system.
-    this.metadata = new MetadataService(async url => requestUrl({ url, throw: false, headers: metadataHeaders(navigator.userAgent) }), Array.isArray(saved?.cache) ? saved.cache : []);
+    this.metadata = new MetadataService(async url => requestUrl({ url, throw: false, headers: metadataHeaders() }), Array.isArray(saved?.cache) ? saved.cache : []);
     this.metadata.enabled = this.settings.remoteMetadata;
     this.register(this.metadata.subscribe(() => this.scheduleSave()));
     this.registerMarkdownPostProcessor((element, context) => {
@@ -68,7 +67,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   registerDocument(doc: Document): void {
     if (this.documents.has(doc)) return;
     this.documents.add(doc);
-    const style = doc.createElement('style');
+    const style = (doc.win as typeof window).createEl('style');
     style.dataset.linkFlairAppearance = 'true';
     style.textContent = appearanceCSS(this.settings.appearance);
     doc.head.append(style);
@@ -123,7 +122,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
       const to = from + href.length;
       if (from <= cursor && cursor <= to) return { from, to, labelFrom: from, labelTo: to, href, label: href, form: 'bare', internal: false };
     }
-    new Notice('Place the cursor inside a link first.');
+    new Notice('Select a position inside a link first.');
   }
 
   private replaceLink(editor: Editor, link: SourceLink, replacement: string): void {
@@ -131,8 +130,8 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   }
 
   private scheduleSave(): void {
-    clearTimeout(this.saveTimer);
-    this.saveTimer = setTimeout(() => { void this.saveData({ settings: this.settings, cache: this.metadata.snapshot() }); }, 500);
+    window.clearTimeout(this.saveTimer);
+    this.saveTimer = window.setTimeout(() => { void this.saveData({ settings: this.settings, cache: this.metadata.snapshot() }); }, 500);
   }
 
   refreshEditors(): void {
@@ -155,7 +154,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
 
   onunload(): void {
     if (this.saveTimer) void this.saveData({ settings: this.settings, cache: this.metadata.snapshot() });
-    clearTimeout(this.saveTimer);
+    window.clearTimeout(this.saveTimer);
     for (const style of this.appearanceStyles.values()) style.remove();
     this.appearanceStyles.clear();
     for (const child of [...this.reading]) child.unload();
@@ -167,13 +166,103 @@ class FlairSettings extends PluginSettingTab {
   private selectedApp?: SupportedApp;
   private moreAppsExpanded = false;
   constructor(private plugin: LinkFlairPlugin) { super(plugin.app, plugin); }
-  display(): void {
-    this.plugin.registerDocument(this.containerEl.ownerDocument);
-    this.containerEl.empty();
-    new Setting(this.containerEl).setName('Appearance').setHeading();
-    this.containerEl.createEl('p', { text: 'Adjust links live in your notes and in the preview below. Select an app to adjust its icon size. Resetting affects appearance only.' });
+  getSettingDefinitions(): SettingDefinitionItem[] {
     const appearance = this.plugin.settings.appearance;
-    const preview = this.containerEl.createDiv({ cls: 'link-flair-settings-preview' });
+    const items: SettingDefinition[] = [
+      {
+        name: 'App icon sizes',
+        desc: 'Select an app in the preview to adjust its icon size.',
+        aliases: SUPPORTED_APPS.map(([name]) => name),
+        render: setting => {
+          this.plugin.registerDocument(setting.settingEl.ownerDocument);
+          setting.settingEl.empty();
+          setting.settingEl.addClass('link-flair-preview-row');
+          setting.settingEl.createEl('p', { text: 'Adjust links live in your notes and in the preview below. Select an app to adjust its icon size. Resetting affects appearance only.' });
+          this.renderPreview(setting.settingEl);
+        },
+      },
+      {
+        name: 'Underline links on hover',
+        desc: 'Show a dashed underline when hovering over a link. Hover colors apply either way.',
+        render: setting => { setting.addToggle(toggle => toggle.setValue(appearance.underlineOnHover).onChange(value => {
+          appearance.underlineOnHover = value;
+          this.plugin.updateAppearance();
+        })); },
+      },
+      {
+        name: 'Use theme link colors',
+        desc: 'Use Obsidian’s current link and hover colors. Turn off to choose your own colors below.',
+        render: setting => { setting.addToggle(toggle => toggle.setValue(appearance.themeColors).onChange(value => {
+          appearance.themeColors = value;
+          this.plugin.updateAppearance();
+          this.refreshDomState();
+        })); },
+      },
+    ];
+    for (const [key, name] of [['darkColor', 'Link color · dark mode'], ['darkHover', 'Hover color · dark mode'], ['lightColor', 'Link color · light mode'], ['lightHover', 'Hover color · light mode']] as const) {
+      items.push({
+        name,
+        visible: () => !appearance.themeColors,
+        render: setting => { setting.addColorPicker(picker => picker.setValue(appearance[key]).onChange(value => {
+          appearance[key] = value;
+          this.plugin.updateAppearance();
+        })); },
+      });
+    }
+    for (const [key, name, desc] of [
+      ['fontWeight', 'Text weight', '400 is regular; 700 is bold.'],
+      ['iconSize', 'Icon size', 'General size relative to the link text. Individual app sizes are applied on top.'],
+      ['iconGap', 'Icon spacing', 'Space between the icon and its label, in pixels.'],
+      ['iconOpacity', 'Icon opacity', 'Overrides image dimming from your theme.'],
+      ['iconBrightness', 'Icon brightness', '100% keeps the original artwork brightness.'],
+      ['iconSaturation', 'Icon saturation', '100% keeps original colors; 0% is grayscale.'],
+    ] as const) {
+      items.push({ name, desc, render: setting => {
+        const format = (value: number) => key === 'fontWeight' ? String(value) : key === 'iconGap' ? `${value}px` : `${Math.round(value * 100)}%`;
+        const output = setting.controlEl.createEl('output', { text: format(appearance[key]), cls: 'link-flair-setting-value' });
+        const change = (value: number) => {
+          appearance[key] = value;
+          output.textContent = format(value);
+          this.plugin.updateAppearance();
+        };
+        setting.addSlider(slider => {
+          const [min, max, step] = APPEARANCE_RANGES[key];
+          slider.setLimits(min, max, step).setValue(appearance[key]).onChange(change);
+          slider.sliderEl.addEventListener('input', () => change(slider.getValue()));
+        });
+      } });
+    }
+    items.push({
+      name: 'Reset appearance',
+      desc: 'Restore the current default blue colors, 500 text weight, and original icon size and colors.',
+      render: setting => { setting.addButton(button => button.setButtonText('Reset appearance').onClick(() => {
+        this.plugin.settings.appearance = defaultAppearance();
+        this.plugin.updateAppearance();
+        this.update();
+      })); },
+    });
+    const behavior: SettingDefinition[] = [];
+    for (const [key, name, desc] of [
+      ['remoteMetadata', 'Remote web metadata', 'Load titles and favicons directly from linked websites. Websites receive the requested URL; no Google favicon service is used. App and internal links never need network access.'],
+      ['showTitles', 'Titles for bare web URLs', 'Display page titles without changing note contents. Explicit Markdown labels are always preserved.'],
+      ['nativeLinks', 'Native note icons', 'Add an icon to internal note links while keeping Obsidian navigation, aliases, and hover previews.'],
+    ] as const) {
+      behavior.push({ name, desc, render: setting => { setting.addToggle(toggle => toggle.setValue(this.plugin.settings[key]).onChange(async value => {
+        this.plugin.settings[key] = value;
+        await this.plugin.updateSettings();
+      })); } });
+    }
+    behavior.push({
+      name: 'Cached metadata',
+      desc: 'Cached titles and icons can be removed at any time. Your notes are unaffected.',
+      render: setting => { setting.addButton(button => button.setButtonText('Clear cache').onClick(() => this.plugin.metadata.clear())); },
+    });
+    return [{ type: 'group', heading: 'Appearance', items }, { type: 'group', heading: 'Link behavior', items: behavior }];
+  }
+
+  private renderPreview(container: HTMLElement): void {
+    const appearance = this.plugin.settings.appearance;
+    const preview = container.createDiv({ cls: 'link-flair-settings-preview' });
     const samples = preview.createDiv();
     const moreApps = preview.createEl('details', { cls: 'link-flair-more-apps' });
     moreApps.open = this.moreAppsExpanded;
@@ -227,55 +316,5 @@ class FlairSettings extends PluginSettingTab {
     fallback.append(iconElement(preview.ownerDocument, classifyLink('other-app://preview')!, this.plugin.metadata));
     fallback.createSpan({ cls: 'link-flair-label', text: 'Other app' });
     showAppSize();
-    new Setting(this.containerEl).setName('Underline links on hover').setDesc('Show a dashed underline when hovering over a link. Hover colors apply either way.').addToggle(toggle => toggle.setValue(appearance.underlineOnHover).onChange(value => {
-      appearance.underlineOnHover = value;
-      this.plugin.updateAppearance();
-    }));
-    new Setting(this.containerEl).setName('Use theme link colors').setDesc('Use Obsidian’s current link and hover colors. Turn off to choose your own colors below.').addToggle(toggle => toggle.setValue(appearance.themeColors).onChange(value => {
-      appearance.themeColors = value;
-      this.plugin.updateAppearance();
-      this.display();
-    }));
-    if (!appearance.themeColors) {
-      for (const [key, name] of [['darkColor', 'Link color · dark mode'], ['darkHover', 'Hover color · dark mode'], ['lightColor', 'Link color · light mode'], ['lightHover', 'Hover color · light mode']] as const) {
-        new Setting(this.containerEl).setName(name).addColorPicker(picker => picker.setValue(appearance[key]).onChange(value => {
-          appearance[key] = value;
-          this.plugin.updateAppearance();
-        }));
-      }
-    }
-    const sliders = [
-      ['fontWeight', 'Text weight', '400 is regular; 700 is bold.'],
-      ['iconSize', 'Icon size', 'General size relative to the link text. Individual app sizes are applied on top.'],
-      ['iconGap', 'Icon spacing', 'Space between the icon and its label, in pixels.'],
-      ['iconOpacity', 'Icon opacity', 'Overrides image dimming from your theme.'],
-      ['iconBrightness', 'Icon brightness', '100% keeps the original artwork brightness.'],
-      ['iconSaturation', 'Icon saturation', '100% keeps original colors; 0% is grayscale.'],
-    ] as const;
-    for (const [key, name, description] of sliders) {
-      const [min, max, step] = APPEARANCE_RANGES[key];
-      const setting = new Setting(this.containerEl).setName(name).setDesc(description);
-      const format = (value: number) => key === 'fontWeight' ? String(value) : key === 'iconGap' ? `${value}px` : `${Math.round(value * 100)}%`;
-      const output = setting.controlEl.createEl('output', { text: format(appearance[key]), cls: 'link-flair-setting-value' });
-      const change = (value: number) => {
-        appearance[key] = value;
-        output.textContent = format(value);
-        this.plugin.updateAppearance();
-      };
-      setting.addSlider(slider => {
-        slider.setLimits(min, max, step).setValue(appearance[key]).setDynamicTooltip().onChange(change);
-        slider.sliderEl.addEventListener('input', () => change(slider.getValue()));
-      });
-    }
-    new Setting(this.containerEl).setName('Reset appearance').setDesc('Restore the current default blue colors, 500 text weight, and original icon size and colors.').addButton(button => button.setButtonText('Reset appearance').onClick(() => {
-      this.plugin.settings.appearance = defaultAppearance();
-      this.plugin.updateAppearance();
-      this.display();
-    }));
-    new Setting(this.containerEl).setName('Link behavior').setHeading();
-    new Setting(this.containerEl).setName('Remote web metadata').setDesc('Load titles and favicons directly from linked websites. Websites receive the requested URL; no Google favicon service is used. App and internal links never need network access.').addToggle(toggle => toggle.setValue(this.plugin.settings.remoteMetadata).onChange(async value => { this.plugin.settings.remoteMetadata = value; await this.plugin.updateSettings(); }));
-    new Setting(this.containerEl).setName('Titles for bare web URLs').setDesc('Display page titles without changing note contents. Explicit Markdown labels are always preserved.').addToggle(toggle => toggle.setValue(this.plugin.settings.showTitles).onChange(async value => { this.plugin.settings.showTitles = value; await this.plugin.updateSettings(); }));
-    new Setting(this.containerEl).setName('Native note icons').setDesc('Add an icon to internal note links while keeping Obsidian navigation, aliases, and hover previews.').addToggle(toggle => toggle.setValue(this.plugin.settings.nativeLinks).onChange(async value => { this.plugin.settings.nativeLinks = value; await this.plugin.updateSettings(); }));
-    new Setting(this.containerEl).setName('Cached metadata').setDesc('Cached titles and icons can be removed at any time. Your notes are unaffected.').addButton(button => button.setButtonText('Clear cache').onClick(() => this.plugin.metadata.clear()));
   }
 }

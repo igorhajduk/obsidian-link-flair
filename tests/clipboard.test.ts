@@ -1,5 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { copyWithoutFlair } from '../src/clipboard';
+
+// Obsidian provides document-local DOM helpers in each window.
+beforeAll(() => {
+  Object.defineProperty(document, 'win', { configurable: true, value: {
+    createDiv: () => document.createElement('div'),
+  } });
+});
 
 afterEach(() => { document.getSelection()?.removeAllRanges(); document.body.replaceChildren(); });
 

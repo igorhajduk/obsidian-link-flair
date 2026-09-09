@@ -12,7 +12,7 @@ async function openSettings() {
   await page.evaluate(() => { app.setting.open(); app.setting.openTabById('link-flair'); });
   await page.waitForFunction(() => app.setting.activeTab?.containerEl.isConnected);
   for (const candidate of browser.contexts().flatMap(context => context.pages())) {
-    if (await candidate.locator('.link-flair-settings-preview').count()) { settingsPage = candidate; return; }
+    if (await candidate.locator('.link-flair-settings-preview').count()) { settingsPage = candidate; await settingsPage.getByPlaceholder('Search settings...').fill(''); return; }
   }
   throw new Error('Settings window not found');
 }
@@ -97,7 +97,7 @@ try {
   console.log('PASS Appearance controls update preview immediately');
 
   await setting('Use theme link colors').locator('.checkbox-container').click();
-  assert.equal(await setting('Link color · dark mode').count(), 0);
+  assert(await setting('Link color · dark mode').isHidden());
   const colorMatchesTheme = await settingsPage.evaluate(() => {
     const probe = document.createElement('span');
     probe.style.color = 'var(--link-color)';
@@ -147,6 +147,14 @@ try {
   assert.equal(await page.evaluate(() => app.workspace.getMostRecentLeaf().view.editor.getValue()), source);
   console.log('PASS Reset restores defaults and leaves note contents unchanged');
   await settingsPage.screenshot({ path: 'work/appearance-settings-verified.png' });
+  await settingsPage.getByPlaceholder('Search settings...').fill('Icon opacity');
+  const searchResult = settingsPage.locator('.setting-search-result-item').filter({ hasText: 'Icon opacity' });
+  await searchResult.waitFor();
+  await searchResult.click();
+  await adjust('Icon opacity', 0.8);
+  assert.equal(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.iconOpacity), 0.8);
+  console.log('PASS Global settings search finds the plugin control and opens a working opacity slider');
+
 } finally {
   await page.evaluate(appearance => {
     app.setting.close();

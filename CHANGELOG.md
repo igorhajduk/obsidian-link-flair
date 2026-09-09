@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1] - 2026-09-10
+
+- Use a dedicated User-Agent for website metadata requests without reading browser identity.
+- Make settings searchable in Obsidian and update DOM helpers, timers, and link styles for compatibility with the current plugin API.
+- Add build provenance attestations for release assets.
+
 ## [0.1.0] - 2026-09-10
 
 Initial release.

@@ -29,7 +29,9 @@ Reading-view source provenance is conservative. If a rendered section contains a
 
 ## Metadata and network behavior
 
-Remote web metadata is enabled by default. Requests use Obsidian's `requestUrl` API and go directly to websites, without a plugin backend, analytics, or third-party favicon service. The HTTP User-Agent retains the browser identifier and removes Obsidian/Electron tokens, which some websites reject. This header normalization does not detect the operating system.
+Requests use the fixed `LinkFlair` User-Agent; browser and operating-system identity are not read for this header.
+
+Remote web metadata is enabled by default. Requests use Obsidian's `requestUrl` API and go directly to websites, without a plugin backend, analytics, or third-party favicon service.
 
 An authored web link requests an origin icon. If `/favicon.ico` is unavailable, Link Flair looks for icon declarations on the origin homepage. Bare URLs also request the destination page for its title. App URIs and internal note links never enter this service.
 
