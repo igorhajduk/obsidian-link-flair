@@ -1,0 +1,9 @@
+{
+  "id": "link-flair",
+  "name": "Link Flair",
+  "version": "0.1.0",
+  "minAppVersion": "1.13.7",
+  "description": "Display web, app, and internal links with icons and readable titles while preserving your Markdown.",
+  "author": "gorky",
+  "isDesktopOnly": false
+}

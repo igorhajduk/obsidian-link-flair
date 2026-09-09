@@ -1,0 +1,5 @@
+Link Flair source code is licensed under the MIT License.
+Third-party application icons and trademarks are excluded from that license and remain the property of their respective owners.
+OpenAI owns the ChatGPT and Codex marks. Other application marks belong to their respective owners.
+These icons identify link destinations. Link Flair is not affiliated with or endorsed by those owners.
+Artwork sources and usage information: https://github.com/igorhajduk/obsidian-link-flair/blob/main/docs/app-icons.md

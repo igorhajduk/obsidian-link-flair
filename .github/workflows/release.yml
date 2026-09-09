@@ -1,0 +1,49 @@
+name: Prepare draft release
+
+on:
+  push:
+    tags: ['[0-9]*.[0-9]*.[0-9]*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run package
+      - name: Validate tag and extract changelog
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: node scripts/release-notes.mjs "$RELEASE_VERSION" > dist/release-notes.md
+      - name: Create draft with individual plugin assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_VERSION" \
+            --verify-tag \
+            --draft \
+            --title "$RELEASE_VERSION" \
+            --notes-file dist/release-notes.md \
+            dist/link-flair/main.js \
+            dist/link-flair/manifest.json \
+            dist/link-flair/styles.css

@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible problem with Link Flair.
+body:
+  - type: markdown
+    attributes:
+      value: Use a synthetic or anonymized link. Do not include private URLs, access tokens, or personal vault contents.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Obsidian version/build and Link Flair version.
+      placeholder: 'Obsidian 1.13.7 (365), Link Flair 0.1.0'
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS version and device type, including iPhone or iPad where relevant.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Editor mode
+      multiple: true
+      options:
+        - Reading view
+        - Live Preview
+        - Source mode
+        - Settings
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Give the steps, expected result, actual result, and an anonymized example link or Markdown snippet. Mention relevant themes or other plugins.
+    validations:
+      required: true
