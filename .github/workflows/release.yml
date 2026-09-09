@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
@@ -33,6 +35,14 @@ jobs:
         env:
           RELEASE_VERSION: ${{ github.ref_name }}
         run: node scripts/release-notes.mjs "$RELEASE_VERSION" > dist/release-notes.md
+      - name: Attest plugin asset provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          create-storage-record: false
+          subject-path: |
+            dist/link-flair/main.js
+            dist/link-flair/manifest.json
+            dist/link-flair/styles.css
       - name: Create draft with individual plugin assets
         env:
           GH_TOKEN: ${{ github.token }}

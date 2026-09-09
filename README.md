@@ -29,7 +29,7 @@ To install a local build:
 2. Copy `dist/link-flair` into your vault's `.obsidian/plugins/` directory.
 3. Reload Obsidian and enable **Link Flair** under **Settings → Community plugins**.
 
-Tested on macOS, iPhone, and iPad. macOS testing used Obsidian 1.13.7; iPhone testing used Obsidian 1.13.7 (365). Windows and Linux UI testing is pending. Linux CI runs automated tests and build checks.
+Version 0.1.0 was tested on macOS, iPhone, and iPad. macOS testing used Obsidian 1.13.7; iPhone testing used Obsidian 1.13.7 (365). Windows and Linux UI testing is pending. Linux CI runs automated tests and build checks.
 
 ## Usage
 
@@ -48,6 +48,8 @@ See [supported apps and URL schemes](docs/supported-apps.md) for the full list. 
 **Remote web metadata is enabled by default.** Link Flair requests titles and favicons directly from linked websites using Obsidian's request API. Websites receive the requested URLs. No analytics, account, plugin backend, or third-party favicon service is used. App URIs, internal links, and bundled app icons do not require network requests.
 
 Turn off **Remote web metadata** to stop new requests. Already-sent requests cannot be cancelled. Derived metadata is stored with plugin settings in `data.json`; your sync configuration may carry that data. Notes do not depend on this cache. See [network behavior and limits](docs/design.md#metadata-and-network-behavior).
+
+The copy commands write a link destination or Markdown link to the clipboard when invoked. Reading-view copy removes decorative icons from the selected content. Link Flair does not read existing system clipboard contents.
 
 ## Documentation and development
 

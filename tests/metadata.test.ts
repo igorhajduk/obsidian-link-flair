@@ -9,8 +9,8 @@ afterEach(() => vi.useRealTimers());
 
 describe('metadata lifecycle', () => {
   it('resolves Teams-style icons when the embedded client is rejected by the site', async () => {
-    const headers = metadataHeaders('Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) obsidian/1.13.7 Chrome/150.0.7871.212 Electron/43.3.0 Safari/537.36');
-    expect(headers['User-Agent']).toBe('Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.7871.212 Safari/537.36');
+    const headers = metadataHeaders();
+    expect(headers['User-Agent']).toBe('LinkFlair');
     const request = vi.fn(async (url: string) => {
       if (/obsidian|Electron/i.test(headers['User-Agent']!)) return response('<title>Microsoft Teams - Error</title>');
       if (url === 'https://cdn.example.com/teams.ico') return response('pixels', 'image/x-icon');

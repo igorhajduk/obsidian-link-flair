@@ -16,7 +16,7 @@ npm run package
 
 The unit suite covers link classification and source preservation, Markdown labels and references, metadata filtering and caching, concurrency and late results, appearance preference validation, and clipboard fidelity. Vitest reads `tests/**/*.test.ts` in jsdom. Tests do not contact destination apps or use personal vaults.
 
-The recommended linter also emits non-blocking migration and style advice. Existing warnings include declarative settings APIs, document creation helpers, timers, and UI wording. The User-Agent normalization diagnostic in `main.ts` is retained as a warning because that code is not OS detection. Regex exclusions for literal control characters have narrowly documented suppressions. These exceptions do not suppress other rules or change link behavior.
+The recommended Obsidian linter runs without severity overrides. Regex exclusions for literal control characters have narrowly documented suppressions. Interface checks cover the declarative settings API and global settings search.
 
 ## Local Obsidian renderer harness
 
@@ -55,4 +55,4 @@ Repeat the relevant checks on desktop, iPhone, and iPad after changes to interac
 6. Edit a link, undo the edit, copy source and rendered text, and verify destination fidelity.
 7. Disable remote metadata and check offline app icons and cached values. Disable the plugin and confirm that notes remain readable and unchanged.
 
-Tested on macOS with Obsidian 1.13.7, on iPhone with Obsidian 1.13.7 (365), and on iPad with Link Flair 0.1.0. Windows/Linux UI behavior, accessibility, IME input, pop-out windows, and third-party theme/plugin combinations remain unverified.
+Version 0.1.0 was tested on macOS with Obsidian 1.13.7, on iPhone with Obsidian 1.13.7 (365), and on iPad. Windows/Linux UI behavior, accessibility, IME input, pop-out windows, and third-party theme/plugin combinations remain unverified.

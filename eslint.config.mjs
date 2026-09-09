@@ -27,10 +27,4 @@ export default defineConfig(
     languageOptions: { parser: PlainTextParser, parserOptions: { projectService: false } },
     rules: { 'obsidianmd/validate-license': 'warn' },
   },
-  {
-    files: ['src/main.ts'],
-    // This rule mistakes HTTP User-Agent normalization for OS detection.
-    // Keep the diagnostic visible until the upstream rule can distinguish them.
-    rules: { 'obsidianmd/platform': 'warn' },
-  },
 );

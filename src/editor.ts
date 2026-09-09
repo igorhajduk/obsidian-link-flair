@@ -77,12 +77,12 @@ class FlairLabel extends WidgetType {
   eq(other: FlairLabel): boolean { return this.link.from === other.link.from && this.link.to === other.link.to && this.target.href === other.target.href && this.label === other.label && this.icon === other.icon && this.sourcePath === other.sourcePath; }
   toDOM(view: EditorView): HTMLElement {
     const doc = view.dom.ownerDocument;
-    const el = doc.createElement('a');
+    const el = (doc.win as typeof window).createEl('a');
     el.className = 'link-flair-link link-flair-replacement';
     el.href = this.target.href;
     el.dataset.linkFlairKind = this.target.kind;
     el.append(iconElement(doc, this.target, this.host.metadata));
-    const label = doc.createElement('span');
+    const label = (doc.win as typeof window).createSpan();
     label.className = 'link-flair-label';
     label.textContent = this.label;
     el.append(label);

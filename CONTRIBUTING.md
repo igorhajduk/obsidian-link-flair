@@ -49,7 +49,7 @@ For bugs, use the short GitHub issue form and include platform, versions, editor
 3. Write the version's user-facing changes under `## [x.y.z] - YYYY-MM-DD` in `CHANGELOG.md`. While preparing a version, `Unreleased` can stand in for the date. This section is the single source for GitHub release notes.
 4. Run `npm run package` and `npm run release:notes -- x.y.z`. Complete the relevant [interface and platform checks](docs/testing.md#manual-acceptance).
 5. Merge the preparation through a PR. When ready to trigger remote release preparation, create and push a tag matching the version exactly, without a `v` prefix.
-6. The GitHub workflow installs dependencies, runs checks, validates the tag against the manifest/package/version mapping, extracts changelog notes, and creates a **draft** release containing the individual `main.js`, `manifest.json`, and `styles.css` assets.
+6. The GitHub workflow installs dependencies, runs checks, validates the tag against the manifest/package/version mapping, extracts changelog notes, attests the provenance of all three plugin assets, and creates a **draft** release containing the individual `main.js`, `manifest.json`, and `styles.css` assets.
 7. Inspect the draft and assets, then publish manually. The workflow does not publish a release or submit a Community entry. A rerun fails if a release already exists rather than replacing its assets.
 
 Review the [platform test coverage](docs/testing.md#manual-acceptance) and [artwork sources and usage policy](docs/app-icons.md) before release. Preserve `src/assets/NOTICE.txt`, which the build includes at the start of `main.js`. Third-party artwork is excluded from the MIT license.
