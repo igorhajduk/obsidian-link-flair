@@ -6,7 +6,7 @@ import { ReadingFlair } from './reading';
 import type { EditorView } from '@codemirror/view';
 import { copyWithoutFlair } from './clipboard';
 import { loadSettings, appearanceCSS, defaultAppearance, APPEARANCE_RANGES, APP_ICON_SCALE_RANGE, type Settings } from './settings';
-import { iconElement } from './render';
+import { iconElement, iconTheme } from './render';
 import { SUPPORTED_APPS, FEATURED_APPS, type SupportedApp } from './apps';
 
 interface SavedData { settings?: Partial<Settings>; cache?: CacheEntry[] }
@@ -72,8 +72,17 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
     style.textContent = appearanceCSS(this.settings.appearance);
     doc.head.append(style);
     this.appearanceStyles.set(doc, style);
+    let theme = iconTheme(doc);
+    const observer = new MutationObserver(() => {
+      const next = iconTheme(doc);
+      if (next === theme) return;
+      theme = next;
+      this.metadata.refreshAppearance();
+    });
+    observer.observe(doc.body, { attributes: true, attributeFilter: ['class'] });
+    this.register(() => observer.disconnect());
     this.registerDomEvent(doc, 'copy', event => copyWithoutFlair(event, doc));
-    if (doc.defaultView) this.registerDomEvent(doc.defaultView, 'unload', () => this.appearanceStyles.delete(doc));
+    if (doc.defaultView) this.registerDomEvent(doc.defaultView, 'unload', () => { observer.disconnect(); this.appearanceStyles.delete(doc); });
   }
 
   updateAppearance(): void {

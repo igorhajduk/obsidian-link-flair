@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.1.3] - 2026-09-10
+
+- Prefer declared SVG and higher-resolution website icons over low-resolution favicon fallbacks.
+- Refresh existing favicon caches automatically while preserving cached images when offline or when an upgrade fails.
+- Match website favicon variants to Obsidian's light or dark theme, including GitHub, with cached switching between themes.
+
+Tested on macOS, iPhone, and iPad.
+
 ## [0.1.2] - 2026-09-10
 
 - Use compatible CSS for optional dashed hover underlines, preserving link colors, wrapping, and layout.

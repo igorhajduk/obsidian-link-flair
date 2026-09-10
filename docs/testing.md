@@ -18,6 +18,14 @@ The unit suite covers link classification and source preservation, Markdown labe
 
 The recommended Obsidian linter runs without severity overrides. Regex exclusions for literal control characters have narrowly documented suppressions. Interface checks cover the declarative settings API and global settings search.
 
+## Persistent playground
+
+`npm run lab:prepare` builds Link Flair and installs it in `.lab/Flair Lab`, a persistent vault for manual testing in the regular Obsidian app. Open that folder as a vault. It contains a welcome note, favicon examples, and the synthetic test fixtures. Reload Link Flair after updating a build while the lab is open.
+
+To seed a new lab with preferences from another vault, use `npm run lab:prepare -- --settings-from "/path/to/source-vault"`. This initializes missing Obsidian preferences, hotkeys, and Link Flair settings. It does not copy source notes, workspace history, bookmarks, or metadata caches. Subsequent runs update only the development build, preserve existing settings and notes, and retain other enabled plugins. A stable Link Float release can be installed manually for integration checks. The whole `.lab/` directory is ignored by Git.
+
+The automated renderer harness below uses its own disposable vault and profile under `work/`; it does not operate on this playground.
+
 ## Local Obsidian renderer harness
 
 The optional harness currently targets macOS with an installed Obsidian app. It defaults to `/Applications/Obsidian.app/Contents/Resources/obsidian.asar`; set `LINK_FLAIR_OBSIDIAN_ASAR` to select another local bundle. Cross-platform operation of this harness is not established.
@@ -33,6 +41,7 @@ In a second terminal, from the same repository:
 npm run test:smoke
 npm run test:appearance
 npm run test:apps
+npm run test:favicons
 ```
 
 The installer copies `tests/fixtures/Link Flair.md` into `work/test-vault/` if the note is absent. The harness keeps its profile, vault, and redirected CLI socket under `work/`, and exposes its local debugging endpoint on port 19223. The smoke scripts verify the vault path before operating. Do not point these tools at a personal vault.
@@ -40,6 +49,8 @@ The installer copies `tests/fixtures/Link Flair.md` into `work/test-vault/` if t
 The harness loads the installed Obsidian renderer using the development Electron dependency, so its Electron version can differ from the installed Obsidian app. Its in-memory CLI socket adjustment intentionally fails if the installed app's implementation changes; inspect that change before adapting the harness. No installed Obsidian bundle is modified or redistributed.
 
 General scenarios cover app icons, exact destinations, source preservation, edit/undo, Source mode, Reading-view labels and formatting, clipboard cleanup, native note navigation, repeated rendering, and plugin unload. Deep-link dispatch is intercepted rather than executing destination app actions. The app suite renders synthetic links for all new apps and all nine JetBrains IDEs offline in both modes, checking exact Reading-view destinations, identities, decoded images, and unchanged Markdown. It does not open destination apps. Appearance scenarios cover the four initially visible apps, keyboard expansion/collapse of the remaining app list, hidden-app size controls, app selection by click and keyboard, independent app sizes, composition with the general size, unchanged website sizing during app adjustments, hover colors with optional underlining and its persistence/reset, retained color filters, both reading modes, theme colors, persistence, and individual/global reset. Outputs stay under ignored `work/`. Close the test app or stop the harness process when finished.
+
+The favicon suite makes live requests to the public `t.me`, `youtu.be`, and GitHub origins and their image hosts. It seeds legacy 32px/16px ICO cache entries, verifies their upgrade to Telegram's SVG and YouTube's 144px PNG, checks both rendering modes at emulated 1x/2x/3x pixel density, and verifies persistence with remote metadata disabled. Theme checks use GitHub's actual light/dark SVGs and switch the Obsidian theme while emulating the opposite operating-system scheme, in both modes and after an offline reload. Synthetic declarations also exercise color-scheme media selection in the browser. The suite checks authored request scope and unchanged fixture Markdown. Screenshots and a request/dimension report are written under `work/favicons/`; settings, cache, theme, and the original view are restored. Live website changes can require updating these expectations. Density emulation does not establish iOS/iPadOS WebKit compatibility; repeat the visual check on physical devices.
 
 To refresh the README screenshots while the isolated harness is running, run `node scripts/capture-doc-screenshots.mjs`. It captures a temporary note from `tests/fixtures/Showcase.md` with the plugin enabled and disabled, verifies the Markdown is unchanged, and captures the app-size control. It requests metadata for the public example websites, writes three images to `docs/images/`, and restores the plugin settings and original note view. The images show the real Obsidian renderer; they are not interface mockups.
 
@@ -56,3 +67,5 @@ Repeat the relevant checks on desktop, iPhone, and iPad after changes to interac
 7. Disable remote metadata and check offline app icons and cached values. Disable the plugin and confirm that notes remain readable and unchanged.
 
 Version 0.1.0 was tested on macOS with Obsidian 1.13.7, on iPhone with Obsidian 1.13.7 (365), and on iPad. Windows/Linux UI behavior, accessibility, IME input, pop-out windows, and third-party theme/plugin combinations remain unverified.
+
+Version 0.1.3 passed 108 unit tests, lint, type checking, and packaging on macOS 26.6.2 with Node.js 22.19.0. The isolated Obsidian renderer passed the favicon suite and 12 general smoke scenarios, including Reading view, Live Preview, theme switching with the opposite operating-system scheme, and offline cache reloads. The three tested plugin files match the release package byte for byte. Version 0.1.3 was also tested on iPhone and iPad.

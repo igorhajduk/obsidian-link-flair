@@ -48,6 +48,8 @@ a.link-flair-link::after { display: none; }
 }
 
 .link-flair-icon > img { border-radius: 2px; }
+.theme-light .link-flair-icon { color-scheme: light; }
+.theme-dark .link-flair-icon { color-scheme: dark; }
 .markdown-preview-view .link-flair-icon > img,
 .markdown-source-view .link-flair-icon > img,
 .link-flair-settings-preview .link-flair-icon > img {
