@@ -3,7 +3,7 @@ import { StateEffect, type Range } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from '@codemirror/view';
 import { editorInfoField, editorLivePreviewField, setTooltip } from 'obsidian';
 import { BARE_LINK_PATTERN, classifyLink, readBracketLink, trimBareUrl, type LinkTarget, type SourceLink } from './links';
-import { iconElement } from './render';
+import { iconElement, iconTheme } from './render';
 import type { MetadataService } from './metadata';
 
 export const refreshFlair = StateEffect.define<null>();
@@ -132,7 +132,7 @@ export function linkFlairEditor(host: EditorHost) {
         if (view.state.selection.ranges.some(range => range.from <= link.to && range.to >= link.from)) continue;
         const needsTitle = link.form === 'bare' && host.showTitles && target.kind === 'web';
         if (target.kind === 'web') host.metadata.ensure(target.href, needsTitle);
-        const icon = host.metadata.icon(target.href);
+        const icon = host.metadata.icon(target.href, iconTheme(view.dom.ownerDocument));
         if (link.form === 'bare' && (target.kind === 'app' || needsTitle)) {
           const label = needsTitle ? host.metadata.title(target.href) ?? target.fallback : target.fallback;
           decorations.push(Decoration.replace({ widget: new FlairLabel(link, target, host, label, icon, sourcePath) }).range(link.from, link.to));
