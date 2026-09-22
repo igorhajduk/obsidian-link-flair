@@ -41,6 +41,7 @@ In a second terminal, from the same repository:
 npm run test:smoke
 npm run test:appearance
 npm run test:apps
+npm run test:custom-icons
 npm run test:favicons
 ```
 
@@ -56,6 +57,8 @@ To refresh the README screenshots while the isolated harness is running, run `no
 
 ## Manual acceptance
 
+The custom-icon suite uses synthetic private hosts, a local HTTP fixture server, and the file picker. It checks PNG file import, direct SVG URL import and rasterization, rejection of an HTML response, exact-host matching in both modes, offline reload, cache clearing, removal, unchanged Markdown, and bare Claude Code links. It does not open the deep-link destinations. Mobile file-picking and Sync delivery require separate checks on physical devices.
+
 Repeat the relevant checks on desktop, iPhone, and iPad after changes to interactions, rendering, or settings. Record the plugin version, Obsidian version/build, OS, device, modes checked, and results.
 
 1. Install the packaged build into a disposable vault and enable it.
@@ -69,3 +72,7 @@ Repeat the relevant checks on desktop, iPhone, and iPad after changes to interac
 Version 0.1.0 was tested on macOS with Obsidian 1.13.7, on iPhone with Obsidian 1.13.7 (365), and on iPad. Windows/Linux UI behavior, accessibility, IME input, pop-out windows, and third-party theme/plugin combinations remain unverified.
 
 Version 0.1.3 passed 108 unit tests, lint, type checking, and packaging on macOS 26.6.2 with Node.js 22.19.0. The isolated Obsidian renderer passed the favicon suite and 12 general smoke scenarios, including Reading view, Live Preview, theme switching with the opposite operating-system scheme, and offline cache reloads. The three tested plugin files match the release package byte for byte. Version 0.1.3 was also tested on iPhone and iPad.
+
+The development build with custom site icons and Claude Code support passed 143 unit tests, lint, type checking, packaging, the custom-icon suite, supported-app suite, appearance suite, and 12 general smoke scenarios in the isolated Obsidian 1.13.7 renderer on macOS. Physical-device checks for these new features are pending.
+
+`node scripts/smoke-custom-icon-mobile.mjs` imports the live TeamCity download page favicon for a synthetic intranet URL, checks the scope preview and URL-rule save, and verifies the focused input and save button at 393px width with 400px available height. This is a desktop-renderer geometry check, not physical iOS keyboard acceptance.

@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.4] - 2026-09-22
+
+- Add an offline icon and readable labels for Claude Code deep links using `claude://code/...`.
+- Add custom icons from a file, website favicon, or image URL, with site-wide and exact-URL rules, offline storage, and settings to edit or remove them.
+- Keep custom-icon inputs and the save action accessible when the mobile keyboard reduces the available height.
 
 ## [0.1.3] - 2026-09-10
 

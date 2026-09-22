@@ -1,4 +1,5 @@
 import { SUPPORTED_APPS, type SupportedApp } from './apps';
+import { loadCustomIcons, type CustomIcon } from './custom-icons';
 
 export interface Appearance {
   themeColors: boolean;
@@ -32,6 +33,7 @@ export function defaultAppearance(): Appearance {
 }
 
 export interface Settings {
+  customIcons: CustomIcon[];
   remoteMetadata: boolean;
   showTitles: boolean;
   nativeLinks: boolean;
@@ -44,9 +46,10 @@ export const APPEARANCE_RANGES = {
 } as const;
 
 export function loadSettings(value: unknown): Settings {
-  const settings: Settings = { remoteMetadata: true, showTitles: true, nativeLinks: true, appearance: defaultAppearance() };
+  const settings: Settings = { customIcons: [], remoteMetadata: true, showTitles: true, nativeLinks: true, appearance: defaultAppearance() };
   if (!value || typeof value !== 'object') return settings;
   const saved = value as Record<string, unknown>;
+  settings.customIcons = loadCustomIcons(saved.customIcons);
   for (const key of ['remoteMetadata', 'showTitles', 'nativeLinks'] as const) if (typeof saved[key] === 'boolean') settings[key] = saved[key];
   if (!saved.appearance || typeof saved.appearance !== 'object') return settings;
   const a = saved.appearance as Record<string, unknown>;

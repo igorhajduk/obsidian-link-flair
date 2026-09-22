@@ -3,6 +3,7 @@ import type { LinkTarget } from './links';
 export const SUPPORTED_APPS = [
   ['ChatGPT', 'chatgpt-conversation://preview'],
   ['Codex', 'codex://preview'],
+  ['Claude Code', 'claude://code/new'],
   ['Zed', 'zed://preview'],
   ['MindNode', 'mindnode://preview'],
   ['Anybox', 'anybox://preview'],

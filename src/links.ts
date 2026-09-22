@@ -69,6 +69,14 @@ export function classifyLink(href: string, internal = false): LinkTarget | null 
     } catch { return null; }
   }
   if (!scheme) return null;
+  if (scheme === 'claude') {
+    try {
+      const url = new URL(href);
+      if (url.hostname.toLowerCase() === 'code' && !url.username && !url.password && !url.port) {
+        return { href, kind: 'app', app: 'Claude Code', icon: 'square-terminal', fallback: appLabel(href, scheme, 'Claude Code') };
+      }
+    } catch { /* Preserve other Claude destinations with the generic fallback below. */ }
+  }
   if (scheme === 'jetbrains') {
     try {
       const url = new URL(href);

@@ -20,27 +20,27 @@ const setting = name => settingsPage.locator('.setting-item').filter({ has: sett
 try {
   await openSettings();
   await settingsPage.getByRole('button', { name: 'Reset appearance', exact: true }).click();
-  await settingsPage.waitForFunction(() => [...document.querySelectorAll('.link-flair-settings-preview img')].filter(i => i.complete && i.naturalWidth > 0).length === 23);
+  await settingsPage.waitForFunction(() => [...document.querySelectorAll('.link-flair-settings-preview img')].filter(i => i.complete && i.naturalWidth > 0).length === 24);
   assert.equal(await settingsPage.locator('.link-flair-settings-preview svg').count(), 1);
   const visibleApps = await settingsPage.getByRole('button').filter({ has: settingsPage.locator('.link-flair-label') }).allTextContents();
   assert.deepEqual(visibleApps, ['ChatGPT', 'Codex', 'Zed', 'MindNode']);
-  assert(await settingsPage.getByRole('button', { name: 'OmniFocus icon size', exact: true }).isHidden());
+  assert(await settingsPage.getByRole('button', { name: 'Claude Code icon size', exact: true }).isHidden());
   const summary = settingsPage.locator('.link-flair-more-apps > summary');
   await summary.focus();
   await settingsPage.keyboard.press('Enter');
-  await settingsPage.getByRole('button', { name: 'OmniFocus icon size', exact: true }).click();
-  const omniSlider = settingsPage.getByRole('slider', { name: 'OmniFocus icon size', exact: true });
-  await omniSlider.focus();
+  await settingsPage.getByRole('button', { name: 'Claude Code icon size', exact: true }).click();
+  const claudeSlider = settingsPage.getByRole('slider', { name: 'Claude Code icon size', exact: true });
+  await claudeSlider.focus();
   await settingsPage.keyboard.press('ArrowRight');
-  assert.equal(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.appIconScales.OmniFocus), 1.05);
+  assert.equal(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.appIconScales['Claude Code']), 1.05);
   await summary.click();
   await settingsPage.waitForFunction(() => document.querySelector('.link-flair-app-size').hidden);
   await summary.click();
-  await settingsPage.getByRole('button', { name: 'OmniFocus icon size', exact: true }).click();
-  assert.equal(await settingsPage.getByRole('slider', { name: 'OmniFocus icon size', exact: true }).inputValue(), '1.05');
+  await settingsPage.getByRole('button', { name: 'Claude Code icon size', exact: true }).click();
+  assert.equal(await settingsPage.getByRole('slider', { name: 'Claude Code icon size', exact: true }).inputValue(), '1.05');
   await summary.click();
   await settingsPage.waitForFunction(() => document.querySelector('.link-flair-app-size').hidden);
-  console.log('PASS All 23 app images decode; only the requested four are initially visible; keyboard expansion, hidden-app sizing, collapse and reopening work');
+  console.log('PASS All 24 app images decode; only the requested four are initially visible; keyboard expansion, hidden-app sizing, collapse and reopening work');
 
   const previewLink = settingsPage.getByRole('button', { name: 'Codex icon size', exact: true });
   await previewLink.hover();
@@ -115,6 +115,7 @@ try {
   assert.equal(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.underlineOnHover), true);
   console.log('PASS Appearance preferences, including hover underlining, survive a plugin reload');
   assert.equal(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.appIconScales.Codex), 1.55);
+  assert.equal(await page.evaluate(() => app.plugins.plugins['link-flair'].settings.appearance.appIconScales['Claude Code']), 1.05);
 
   await page.evaluate(async () => {
     const leaf = app.workspace.getMostRecentLeaf();

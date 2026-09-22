@@ -8,6 +8,8 @@ import { copyWithoutFlair } from './clipboard';
 import { loadSettings, appearanceCSS, defaultAppearance, APPEARANCE_RANGES, APP_ICON_SCALE_RANGE, type Settings } from './settings';
 import { iconElement, iconTheme } from './render';
 import { SUPPORTED_APPS, FEATURED_APPS, type SupportedApp } from './apps';
+import { CustomIconModal } from './custom-icon-modal';
+import { customIconHost, customIconKey, customIconUrl, type CustomIcon } from './custom-icons';
 
 interface SavedData { settings?: Partial<Settings>; cache?: CacheEntry[] }
 
@@ -26,6 +28,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
     this.settings = loadSettings(saved?.settings);
     this.metadata = new MetadataService(async url => requestUrl({ url, throw: false, headers: metadataHeaders() }), Array.isArray(saved?.cache) ? saved.cache : []);
     this.metadata.enabled = this.settings.remoteMetadata;
+    this.metadata.setCustomIcons(this.settings.customIcons);
     this.register(this.metadata.subscribe(() => this.scheduleSave()));
     this.registerMarkdownPostProcessor((element, context) => {
       const child = new ReadingFlair(element, context, this, () => this.reading.delete(child));
@@ -101,12 +104,28 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
     menu.addItem(item => item.setTitle('Open link').setIcon('external-link').onClick(() => this.open(target, '', false)));
     menu.addItem(item => item.setTitle('Copy link').setIcon('copy').onClick(() => this.copy(target.href)));
     menu.addItem(item => item.setTitle('Copy Markdown link').setIcon('link').onClick(() => this.copy(markdownLink(label, target.href))));
+    if (target.kind === 'web') {
+      const host = customIconHost(target.href);
+      if (host) menu.addItem(item => item.setTitle('Customize site icon').setIcon('image').onClick(() => this.editCustomIcon(target.href)));
+    }
     menu.showAtMouseEvent(event);
   }
 
   private async copy(text: string): Promise<void> {
     try { await navigator.clipboard.writeText(text); }
     catch { new Notice('Could not write to the clipboard.'); }
+  }
+
+  editCustomIcon(target?: string | CustomIcon, onSaved?: () => void): void {
+    const href = typeof target === 'string' ? target : undefined;
+    const existing = typeof target === 'object' ? target : this.settings.customIcons.find(icon => !!icon.url && icon.url === customIconUrl(href ?? ''))
+      ?? this.settings.customIcons.find(icon => !icon.url && icon.host === customIconHost(href ?? ''));
+    new CustomIconModal(this.app, existing ?? {}, async (icon: CustomIcon) => {
+      this.settings.customIcons = this.settings.customIcons.filter(item => (!existing || customIconKey(item) !== customIconKey(existing)) && customIconKey(item) !== customIconKey(icon));
+      this.settings.customIcons.push(icon);
+      await this.updateSettings();
+      onSaved?.();
+    }, href).open();
   }
 
   private displayLabel(link: SourceLink): string {
@@ -153,6 +172,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   }
 
   async updateSettings(): Promise<void> {
+    this.metadata.setCustomIcons(this.settings.customIcons);
     this.metadata.setEnabled(this.settings.remoteMetadata);
     await this.saveData({ settings: this.settings, cache: this.metadata.snapshot() });
     this.refreshEditors();
@@ -266,7 +286,27 @@ class FlairSettings extends PluginSettingTab {
       desc: 'Cached titles and icons can be removed at any time. Your notes are unaffected.',
       render: setting => { setting.addButton(button => button.setButtonText('Clear cache').onClick(() => this.plugin.metadata.clear())); },
     });
-    return [{ type: 'group', heading: 'Appearance', items }, { type: 'group', heading: 'Link behavior', items: behavior }];
+    const customIcons: SettingDefinition[] = [{
+      name: 'Custom site icons',
+      desc: 'Use your own icon for a website, including sites behind a VPN. Import a file, website, or image URL; saved icons work offline in both themes.',
+      render: setting => { setting.addButton(button => button.setButtonText('Add site icon').onClick(() => this.plugin.editCustomIcon(undefined, () => this.update()))); },
+    }];
+    for (const icon of this.plugin.settings.customIcons) {
+      customIcons.push({
+        name: icon.url ?? icon.host,
+        desc: icon.url ? 'Only this URL' : 'Entire site',
+        render: setting => {
+          setting.controlEl.createEl('img', { cls: 'link-flair-custom-thumbnail', attr: { src: icon.icon, alt: '' } });
+          setting.addButton(button => button.setButtonText('Edit').onClick(() => this.plugin.editCustomIcon(icon, () => this.update())));
+          setting.addButton(button => button.setButtonText('Remove').onClick(async () => {
+            this.plugin.settings.customIcons = this.plugin.settings.customIcons.filter(item => customIconKey(item) !== customIconKey(icon));
+            await this.plugin.updateSettings();
+            this.update();
+          }));
+        },
+      });
+    }
+    return [{ type: 'group', heading: 'Appearance', items }, { type: 'group', heading: 'Site icons', items: customIcons }, { type: 'group', heading: 'Link behavior', items: behavior }];
   }
 
   private renderPreview(container: HTMLElement): void {

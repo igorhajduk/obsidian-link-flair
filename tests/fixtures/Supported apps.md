@@ -2,6 +2,8 @@
 
 Synthetic destinations for rendering checks only. Do not launch these links.
 
+- [Claude Code](<claude://code/new?q=Do%20not%20execute&folder=%2Ftmp%2Fexample>)
+- [Claude Code](<claude://code/session_example?repo=owner%2Frepo&branch=main>)
 - [OmniFocus](<omnifocus:///task/abc?name=Plan%20A>)
 - [DEVONthink](<x-devonthink-item://ABC-123?page=2>)
 - [Drafts](<drafts://open?uuid=abc>)

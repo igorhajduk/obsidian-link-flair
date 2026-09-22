@@ -11,7 +11,8 @@ Both screenshots show the same synthetic Markdown note in Obsidian. The plugin c
 ## Features
 
 - Cached website icons and page titles for bare web URLs, with useful fallbacks.
-- Bundled icons for 23 supported apps, including ChatGPT, Codex, OmniFocus, DEVONthink, Drafts, Bear, Visual Studio Code, Cursor, Hookmark, and nine JetBrains IDEs; generic icons for other app links.
+- Custom website icons from a file or image URL, saved for offline use, including sites behind a VPN.
+- Bundled icons for 24 supported apps, including ChatGPT, Codex, Claude Code, OmniFocus, DEVONthink, Drafts, Bear, Visual Studio Code, Cursor, Hookmark, and nine JetBrains IDEs; generic icons for other app links.
 - Native note links retain aliases, backlinks, navigation, and hover previews.
 - Explicit Markdown labels keep their text and formatting. Source mode stays unchanged.
 - Live appearance controls for colors, text weight, and icon size, spacing, opacity, brightness, and saturation.
@@ -19,7 +20,7 @@ Both screenshots show the same synthetic Markdown note in Obsidian. The plugin c
 
 ## Installation and compatibility
 
-Requires **Obsidian 1.13.7 or later**. Link Flair is being prepared for its first Community plugins submission and is not yet listed in the directory.
+Requires **Obsidian 1.13.7 or later**. Install it from **Settings → Community plugins → Browse → Link Flair**, or open its [Obsidian Community page](https://community.obsidian.md/plugins/link-flair).
 
 For a published release, download `main.js`, `manifest.json`, and `styles.css` from the same [GitHub release](https://github.com/igorhajduk/obsidian-link-flair/releases). Put them in `<vault>/.obsidian/plugins/link-flair/`, reload Obsidian, and enable **Link Flair** under **Settings → Community plugins**. Installation does not require Node.js or the source repository.
 
@@ -43,11 +44,17 @@ The appearance preview initially shows ChatGPT, Codex, Zed, and MindNode. Expand
 
 See [supported apps and URL schemes](docs/supported-apps.md) for the full list. Destinations are preserved exactly. App item metadata is not retrieved; use `[Your label](app://…)` for a specific title.
 
+To replace an icon, open **Settings → Link Flair → Site icons → Add site icon**. Paste the link to decorate. **Entire site** (the default) extracts the hostname and covers every path, scheme, and port on that host; subdomains are separate. **Only this URL** matches the normalized address, including its path and query. Fragments are ignored. The form shows the resulting target before saving. A URL-specific rule takes priority over a site rule.
+
+Under **Icon from**, paste a website page or a direct image URL and choose **Get icon**. Web pages are searched for declared favicons; the downloaded image is shown before you save. The icon is the website's favicon, which may differ from a product logo pictured on the page. **Choose file** imports your own image instead. Edit or remove rules from the settings list. Compact links in Live Preview also offer **Customize site icon** in their context menu.
+
+Imported images are stored as static PNGs up to 128 pixels, work in both themes, and stay available without VPN access. Files may be PNG, JPEG, SVG, WebP, GIF, AVIF, or ICO, up to 2 MB. Custom icons survive cache clearing and appearance resets. To carry them between devices, sync the plugin's settings.
+
 ## Network and privacy
 
 **Remote web metadata is enabled by default.** Link Flair requests titles and favicons directly from linked websites using Obsidian's request API. Websites receive the requested URLs. No analytics, account, plugin backend, or third-party favicon service is used. App URIs, internal links, and bundled app icons do not require network requests.
 
-Turn off **Remote web metadata** to stop new requests. Already-sent requests cannot be cancelled. Derived metadata is stored with plugin settings in `data.json`; your sync configuration may carry that data. Notes do not depend on this cache. See [network behavior and limits](docs/design.md#metadata-and-network-behavior).
+Turn off **Remote web metadata** to stop automatic requests. Explicitly importing a website or image URL still makes requests to resolve and download its icon, including when automatic metadata is off. Already-sent requests cannot be cancelled. Derived metadata and custom icons are stored with plugin settings in `data.json`; your sync configuration may carry that data. Notes do not depend on this cache. See [network behavior and limits](docs/design.md#metadata-and-network-behavior).
 
 The copy commands write a link destination or Markdown link to the clipboard when invoked. Reading-view copy removes decorative icons from the selected content. Link Flair does not read existing system clipboard contents.
 
