@@ -2,6 +2,7 @@
 // Run from the repository root: swift scripts/extract-app-icons.swift
 import AppKit
 var sources = [
+    "claude": "/Applications/Claude.app",
     "devonthink": "/Applications/DEVONthink.app",
     "goland": "/Applications/GoLand.app",
     "cursor": "/Applications/Cursor.app",

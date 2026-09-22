@@ -5,7 +5,7 @@ import { classifyLink } from '../src/links';
 
 describe('appearance preferences', () => {
   it('migrates existing settings without changing the current appearance or behavior choices', () => {
-    expect(loadSettings({ remoteMetadata: false, showTitles: false, nativeLinks: true })).toEqual({ remoteMetadata: false, showTitles: false, nativeLinks: true, appearance: DEFAULT_APPEARANCE });
+    expect(loadSettings({ remoteMetadata: false, showTitles: false, nativeLinks: true })).toEqual({ customIcons: [], remoteMetadata: false, showTitles: false, nativeLinks: true, appearance: DEFAULT_APPEARANCE });
   });
   it('restores saved adjustments and keeps theme colors independent from custom choices', () => {
     const settings = loadSettings({ appearance: { themeColors: true, darkColor: '#123456', iconOpacity: 0.7, iconSize: 1.25 } });

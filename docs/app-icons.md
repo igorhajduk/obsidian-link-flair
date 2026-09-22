@@ -10,12 +10,13 @@ The build retains [this notice](../src/assets/NOTICE.txt) at the start of `main.
 
 ## Sources
 
-These renditions were extracted on 9 September 2026. Source descriptions identify where each file came from; they are not claims that the artwork is licensed under MIT.
+These renditions were extracted on 9 September 2026 unless noted otherwise. Source descriptions identify where each file came from; they are not claims that the artwork is licensed under MIT.
 
 | Asset | Application / owner | Extraction source | Official artwork or policy |
 | --- | --- | --- | --- |
 | `codex.png` | Codex / OpenAI | Codex resource `icon-codex-dark-color.png`, purple variant. | [OpenAI brand guidelines](https://openai.com/brand/) |
 | `chatgpt.png` | ChatGPT / OpenAI | Codex resource `icon-chatgpt.png`, white ChatGPT artwork. | [OpenAI brand guidelines](https://openai.com/brand/) |
+| `claude.png` | Claude / Anthropic | Installed Claude Desktop 2.2553.1 macOS app, extracted on 22 September 2026; used for Claude Code destinations within Claude. | [Claude](https://claude.com/) |
 | `anybox.png` | Anybox / Anybox developer | Anybox macOS app, bundle ID `cc.anybox.Anybox`. | [Anybox](https://anybox.app/), [terms](https://anybox.app/terms-of-service) |
 | `obsidian.png` | Obsidian / Dynalist Inc. | Obsidian macOS app, bundle ID `md.obsidian`. | [Obsidian brand guidelines](https://obsidian.md/brand) |
 | `mindnode.png` | MindNode / IdeasOnCanvas | MindNode macOS app, bundle ID `com.ideasoncanvas.mindnode.macos`. | [MindNode press assets](https://www.mindnode.com/press) |

@@ -11,6 +11,7 @@ Link Flair derives a visual presentation from links while retaining their origin
 | `reading.ts` | Decorate rendered anchors and eligible bare app links; restore original content on unload. |
 | `clipboard.ts` | Remove decorative markup from Reading-view rich copy without interfering with editor source copy. |
 | `metadata.ts` | Queue direct website requests and maintain a bounded cache of derived titles and icons. |
+| `custom-icons.ts`, `custom-icon-modal.ts` | Match exact site hosts, import small static images, and manage manual icon assignments. |
 | `app-icons.ts` | Choose bundled application artwork independently of web metadata. |
 | `apps.ts` | Identify supported apps consistently for previews and per-app icon sizing. |
 | `render.ts` | Create icons with a generic fallback when artwork is unavailable. |
@@ -42,6 +43,10 @@ Automatic requests exclude URLs containing credentials, literal IP addresses, lo
 Disabling remote metadata stops new requests and rejects pending results, but cannot cancel a request already sent. Existing cached values remain usable. Titles expire after one day, icons after seven days, and failures after ten minutes. Legacy icon entries refresh lazily when displayed, while keeping the cached image visible. Failed upgrades retain a usable image and wait ten minutes before another attempt. A version marker prevents repeating completed upgrades after restart. The cache is capped at 128 entries and stored with settings in `data.json`. A vault's sync configuration may carry that file; notes never depend on it.
 
 ## Appearance and lifecycle
+
+Custom site icons are persistent settings, separate from the metadata cache. Site rules use exact, normalized hostnames across HTTP/HTTPS, ports, and paths; subdomains are separate. URL rules preserve scheme, path, and query, ignore fragments, and take precedence over site rules. Existing host-only assignments retain their scope. Explicit assignments can cover single-label names, internal domains, and IP addresses. They override automatic icons before public-site filtering and work when remote metadata is disabled. Assigned hosts skip automatic favicon discovery; requested page titles retain the usual metadata behavior. Removing an assignment restores cached artwork or the normal fallback and discovery flow.
+
+File imports and explicit website/image-URL imports are limited to 2 MiB before decoding, then rasterized to a static PNG no larger than 128 pixels. SVGs are loaded in an image context and only the resulting pixels are stored. Website imports try up to three ranked favicon declarations, then the origin favicon, and show an error if no image decodes. URL imports require HTTP(S) without embedded credentials and allow private hosts because the user explicitly selects the image source. Each request has a ten-second result deadline; response-size checks apply after receipt, and the API cannot cancel the underlying request. Importing does not store the source URL or credentials, and displaying a saved icon makes no request to that source. Cache clearing and appearance resets preserve assignments. The same imported image is used in both themes.
 
 Appearance changes update scoped CSS in registered documents, including Obsidian's separate windows, without rebuilding note content or restarting metadata requests. Preferences are validated when loaded. Resetting appearance leaves link behavior and metadata intact.
 

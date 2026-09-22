@@ -1,4 +1,5 @@
 import { publicWebUrl } from './links';
+import { customIconFor, type CustomIcon } from './custom-icons';
 
 export interface WebResponse { status: number; headers: Record<string, string>; text: string; arrayBuffer: ArrayBuffer }
 export type WebRequest = (url: string) => Promise<WebResponse>;
@@ -29,6 +30,9 @@ export class MetadataService {
   private generation = 0;
   private disposed = false;
   enabled = true;
+  private customIcons: readonly CustomIcon[] = [];
+
+  setCustomIcons(icons: readonly CustomIcon[]): void { this.customIcons = icons; this.emit(); }
 
   constructor(private request: WebRequest, entries: readonly unknown[] = []) {
     for (const value of entries.slice(-MAX_ENTRIES)) {
@@ -61,6 +65,8 @@ export class MetadataService {
   }
 
   icon(href: string, theme: IconTheme = 'light'): string | undefined {
+    const custom = customIconFor(href, this.customIcons);
+    if (custom) return custom;
     const url = publicWebUrl(href);
     const entry = url ? this.entry(`icon:${url.origin}`) : undefined;
     return theme === 'dark' ? entry?.iconDark ?? entry?.icon : entry?.icon;
@@ -78,7 +84,7 @@ export class MetadataService {
     const url = publicWebUrl(href);
     if (!url) return;
     url.hash = '';
-    this.ensureIcon(url, title);
+    if (!customIconFor(href, this.customIcons)) this.ensureIcon(url, title);
     if (!title) return;
     const key = `title:${url.href}`;
     this.load(key, async generation => {
@@ -202,7 +208,7 @@ export class MetadataService {
 }
 
 /** Rank all declarations before limiting requests: large icons often come last. */
-function iconCandidates(doc: Document, page: string, theme: IconTheme): Array<{ href: string; themed: boolean }> {
+export function iconCandidates(doc: Document, page: string, theme: IconTheme, allowPrivate = false): Array<{ href: string; themed: boolean }> {
   let base = page;
   try { base = new URL(doc.querySelector('base[href]')?.getAttribute('href') ?? page, page).href; }
   catch { /* Ignore a malformed base URL. */ }
@@ -215,7 +221,7 @@ function iconCandidates(doc: Document, page: string, theme: IconTheme): Array<{ 
     if (!raw) continue;
     try {
       const url = new URL(raw, base);
-      if (!publicWebUrl(url.href)) continue;
+      if (allowPrivate ? !['http:', 'https:'].includes(url.protocol) || !!url.username || !!url.password : !publicWebUrl(url.href)) continue;
       const vector = link.getAttribute('type')?.toLowerCase() === 'image/svg+xml' || /\.svg$/i.test(url.pathname);
       const sizes = (link.getAttribute('sizes') ?? '').toLowerCase().split(/\s+/).flatMap(size => {
         const match = /^(\d+)x(\d+)$/.exec(size);

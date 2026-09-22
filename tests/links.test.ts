@@ -4,6 +4,9 @@ import { classifyLink, markdownLink, publicWebUrl, readBracketLink, trimBareUrl 
 describe('app destinations', () => {
   it.each([
     ['codex://threads/12345678-abcd-4321-1234-123456789abc', 'Codex'],
+    ['claude://code', 'Claude Code'],
+    ['claude://code/new?q=Fix%20the%20test&folder=%2FUsers%2Fme%2Frepo', 'Claude Code'],
+    ['claude://code/session_example?repo=owner%2Frepo&branch=main#part', 'Claude Code'],
     ['chatgpt-conversation://12345678-abcd-4321-1234-123456789abc', 'ChatGPT'],
     ['anybox://item/abc?title=Example%20bookmark', 'Anybox'],
     ['obsidian://open?vault=My%20Vault&file=A%2FB%23Heading', 'Obsidian'],
@@ -43,6 +46,16 @@ describe('app destinations', () => {
 
   it('recognizes a scheme case-insensitively without changing it', () => {
     expect(classifyLink('THINGS:///show?id=today')).toMatchObject({ href: 'THINGS:///show?id=today', app: 'Things' });
+  });
+
+  it('recognizes Claude Code without changing its scheme, host, or encoded parameters', () => {
+    const href = 'CLAUDE://Code/new?name=Review%20API&q=Keep%20A%26B';
+    expect(classifyLink(href)).toMatchObject({ href, app: 'Claude Code', fallback: 'Claude Code · Review API' });
+  });
+
+  it.each(['claude://claude.ai/chat/example', 'claude://cowork/new', 'claude://code@other/new', 'claude://code:123/new', 'claude://other/code/new'])('does not mislabel other Claude destinations as Code: %s', href => {
+    expect(classifyLink(href)).toMatchObject({ href, kind: 'app', icon: 'external-link' });
+    expect(classifyLink(href)?.app).toBeUndefined();
   });
 
   it('respects native note targets and aliases separately', () => {

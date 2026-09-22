@@ -8,7 +8,7 @@ assert(page);
 assert.equal(await page.evaluate(() => app.vault.adapter.getBasePath()), `${process.cwd()}/work/test-vault`);
 const source = await readFile('tests/fixtures/Supported apps.md', 'utf8');
 const examples = [...source.matchAll(/^- \[([^\]]+)\]\(<([^>]+)>\)$/gm)].map(([, name, href]) => ({ name, href }));
-assert.equal(examples.length, 17);
+assert.equal(examples.length, 19);
 const original = await page.evaluate(() => ({ view: app.workspace.getMostRecentLeaf().getViewState(), enabled: app.plugins.plugins['link-flair'].metadata.enabled }));
 const path = 'Supported apps smoke.md';
 let created = false;

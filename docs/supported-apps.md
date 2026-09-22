@@ -6,6 +6,7 @@ Link Flair identifies these destinations with bundled artwork and an individual 
 | --- | --- |
 | ChatGPT | `chatgpt-conversation://` |
 | Codex | `codex://` |
+| Claude Code | `claude://code/…` and `claude://code` |
 | Zed | `zed://` |
 | MindNode | `mindnode://` |
 | Anybox | `anybox://` |
@@ -32,11 +33,14 @@ In Settings, ChatGPT, Codex, Zed, and MindNode are visible immediately. Expand *
 
 Unknown custom schemes and unrecognized JetBrains hosts use a generic icon. Mail, phone, and file links have built-in symbolic icons. Fork has no dedicated recognition. Direct `goland://` navigation is not assumed from protocol registration alone.
 
+Claude Code recognition is limited to the `code` destination in Claude's shared URL scheme. Claude chat and Cowork links retain the generic fallback. HTTPS links to `claude.ai` remain website links.
+
 ## Reference workflows
 
 The following vendor sources document representative destinations. The checked-in synthetic examples in [Supported apps.md](../tests/fixtures/Supported%20apps.md) exercise decoration in Reading view and Live Preview; they are not real resources to launch.
 
 - [OmniFocus URL schemes](https://inside.omnifocus.com/url-schemes): tasks and perspectives.
+- [Claude desktop links](https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link) and [Claude mobile links](https://support.claude.com/en/articles/14898120-open-the-claude-mobile-app-with-a-link): Code sessions and new-session links, including encoded prompts, folders, repositories, and branches.
 - [DEVONthink item links](https://www.devontechnologies.com/blog/20240502-understanding-devonthink-item-links): documents, including links used by DEVONthink To Go.
 - [Drafts cross-linking](https://docs.getdrafts.com/docs/drafts/cross-linking): `drafts://open?uuid=…`.
 - [Bear callback URLs](https://bear.app/faq/x-callback-url-scheme-documentation/): `bear://x-callback-url/open-note?id=…`.
