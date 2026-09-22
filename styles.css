@@ -190,8 +190,8 @@ a.link-flair-link:focus-visible {
 .link-flair-icon-modal .setting-item { padding-block: 12px; }
 .link-flair-icon-modal .setting-item-control { min-width: 0; }
 .link-flair-icon-modal input[type=url] { width: 100%; min-width: 0; font-size: 16px; }
-.link-flair-icon-modal .setting-item:has(input[type=url]) { display: block; }
-.link-flair-icon-modal .setting-item:has(input[type=url]) .setting-item-control { margin-top: 10px; }
+.link-flair-icon-modal .link-flair-url-field { display: block; }
+.link-flair-icon-modal .link-flair-url-field .setting-item-control { margin-top: 10px; }
 .link-flair-icon-modal .link-flair-icon-source .setting-item-control { display: flex; flex-wrap: wrap; gap: 8px; }
 .link-flair-icon-source input[type=url] { flex-basis: 100%; }
 .link-flair-icon-source button { width: 100%; }

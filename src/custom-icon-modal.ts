@@ -121,6 +121,7 @@ export class CustomIconModal extends Modal {
   }
 
   private configureUrlInput(input: HTMLInputElement, label: string): void {
+    input.closest('.setting-item')?.addClass('link-flair-url-field');
     input.type = 'url';
     input.inputMode = 'url';
     input.autocapitalize = 'off';
