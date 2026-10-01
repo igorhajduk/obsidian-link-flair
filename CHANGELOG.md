@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.1] - 2026-10-01
 
 - Cache fetched titles and icons on each device instead of in `data.json`, so sync carries only settings and custom icons. Existing caches move automatically.
 - Apply settings changed on another device through Sync without restarting Obsidian.
