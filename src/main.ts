@@ -5,12 +5,17 @@ import { MetadataService, metadataHeaders, type CacheEntry } from './metadata';
 import { ReadingFlair } from './reading';
 import type { EditorView } from '@codemirror/view';
 import { copyWithoutFlair } from './clipboard';
+import { IndexedDbCacheStore, type CacheStore } from './cache-store';
 import { loadSettings, appearanceCSS, defaultAppearance, APPEARANCE_RANGES, APP_ICON_SCALE_RANGE, type Settings } from './settings';
 import { iconElement, iconTheme } from './render';
 import { SUPPORTED_APPS, FEATURED_APPS, type SupportedApp } from './apps';
 import { CustomIconModal } from './custom-icon-modal';
 import { customIconHost, customIconKey, customIconUrl, type CustomIcon } from './custom-icons';
 
+/**
+ * `cache` is only read: earlier versions, possibly on another synced device,
+ * stored it in data.json. It is merged into the device cache and removed.
+ */
 interface SavedData { settings?: Partial<Settings>; cache?: CacheEntry[] }
 
 export default class LinkFlairPlugin extends Plugin implements EditorHost {
@@ -18,6 +23,8 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   settings = loadSettings(undefined);
   private reading = new Set<ReadingFlair>();
   private saveTimer?: number;
+  private cacheTimer?: number;
+  private cacheStore!: CacheStore;
   private documents = new WeakSet<Document>();
   private appearanceStyles = new Map<Document, HTMLStyleElement>();
   get showTitles(): boolean { return this.settings.showTitles; }
@@ -26,10 +33,19 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   async onload(): Promise<void> {
     const saved = await this.loadData() as SavedData | null;
     this.settings = loadSettings(saved?.settings);
-    this.metadata = new MetadataService(async url => requestUrl({ url, throw: false, headers: metadataHeaders() }), Array.isArray(saved?.cache) ? saved.cache : []);
+    // appId is unique per vault but not part of the public API; fall back to the vault name.
+    const vaultId = (this.app as unknown as { appId?: string }).appId ?? this.app.vault.getName();
+    this.cacheStore = new IndexedDbCacheStore(`link-flair-cache:${vaultId}`);
+    const stored = await this.cacheStore.load();
+    const legacy = Array.isArray(saved?.cache) ? saved.cache : [];
+    this.metadata = new MetadataService(async url => requestUrl({ url, throw: false, headers: metadataHeaders() }), [...stored, ...legacy]);
     this.metadata.enabled = this.settings.remoteMetadata;
     this.metadata.setCustomIcons(this.settings.customIcons);
-    this.register(this.metadata.subscribe(() => this.scheduleSave()));
+    this.register(this.metadata.subscribe(() => this.scheduleCacheSave()));
+    if (saved && 'cache' in saved) {
+      if (legacy.length) await this.cacheStore.save(this.metadata.snapshot());
+      await this.saveSettings();
+    }
     this.registerMarkdownPostProcessor((element, context) => {
       const child = new ReadingFlair(element, context, this, () => this.reading.delete(child));
       this.reading.add(child);
@@ -57,7 +73,7 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
       const title = this.metadata.title(link.href);
       if (title) this.replaceLink(editor, link, markdownLink(title, link.href));
       else {
-        this.metadata.ensure(link.href, true);
+        this.metadata.ensure(link.href, true, true);
         new Notice(this.settings.remoteMetadata ? 'Loading the page title. Run this command again when it is available.' : 'Enable remote metadata to load a page title.');
       }
     } });
@@ -89,8 +105,12 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   }
 
   updateAppearance(): void {
-    for (const style of this.appearanceStyles.values()) style.textContent = appearanceCSS(this.settings.appearance);
+    this.applyAppearance();
     this.scheduleSave();
+  }
+
+  private applyAppearance(): void {
+    for (const style of this.appearanceStyles.values()) style.textContent = appearanceCSS(this.settings.appearance);
   }
 
   open(target: LinkTarget, sourcePath: string, newLeaf: boolean): void {
@@ -157,9 +177,32 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
     editor.replaceRange(replacement, editor.offsetToPos(link.from), editor.offsetToPos(link.to));
   }
 
+  /** data.json holds settings only, so it changes only when settings do. */
+  private saveSettings(): Promise<void> {
+    window.clearTimeout(this.saveTimer);
+    this.saveTimer = undefined;
+    return this.saveData({ settings: this.settings } satisfies SavedData);
+  }
+
   private scheduleSave(): void {
     window.clearTimeout(this.saveTimer);
-    this.saveTimer = window.setTimeout(() => { void this.saveData({ settings: this.settings, cache: this.metadata.snapshot() }); }, 500);
+    this.saveTimer = window.setTimeout(() => { void this.saveSettings(); }, 500);
+  }
+
+  private scheduleCacheSave(): void {
+    window.clearTimeout(this.cacheTimer);
+    this.cacheTimer = window.setTimeout(() => {
+      this.cacheTimer = undefined;
+      void this.cacheStore.save(this.metadata.snapshot());
+    }, 500);
+  }
+
+  /** Called when Sync or another program rewrites data.json. */
+  async onExternalSettingsChange(): Promise<void> {
+    const saved = await this.loadData() as SavedData | null;
+    this.settings = loadSettings(saved?.settings);
+    this.applyAppearance();
+    this.applySettings();
   }
 
   refreshEditors(): void {
@@ -172,9 +215,14 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   }
 
   async updateSettings(): Promise<void> {
+    await this.saveSettings();
+    this.applySettings();
+  }
+
+  private applySettings(): void {
     this.metadata.setCustomIcons(this.settings.customIcons);
-    this.metadata.setEnabled(this.settings.remoteMetadata);
-    await this.saveData({ settings: this.settings, cache: this.metadata.snapshot() });
+    // Toggling cancels in-flight requests, so only do it on an actual change.
+    if (this.metadata.enabled !== this.settings.remoteMetadata) this.metadata.setEnabled(this.settings.remoteMetadata);
     this.refreshEditors();
     this.app.workspace.iterateAllLeaves(leaf => {
       if (leaf.view instanceof MarkdownView) leaf.view.previewMode.rerender(true);
@@ -182,8 +230,12 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
   }
 
   onunload(): void {
-    if (this.saveTimer) void this.saveData({ settings: this.settings, cache: this.metadata.snapshot() });
-    window.clearTimeout(this.saveTimer);
+    if (this.saveTimer) void this.saveSettings();
+    if (this.cacheTimer) {
+      window.clearTimeout(this.cacheTimer);
+      void this.cacheStore.save(this.metadata.snapshot());
+    }
+    this.cacheStore?.close();
     for (const style of this.appearanceStyles.values()) style.remove();
     this.appearanceStyles.clear();
     for (const child of [...this.reading]) child.unload();
@@ -273,7 +325,7 @@ class FlairSettings extends PluginSettingTab {
     const behavior: SettingDefinition[] = [];
     for (const [key, name, desc] of [
       ['remoteMetadata', 'Remote web metadata', 'Load titles and favicons directly from linked websites. Websites receive the requested URL; no Google favicon service is used. App and internal links never need network access.'],
-      ['showTitles', 'Titles for bare web URLs', 'Display page titles without changing note contents. Explicit Markdown labels are always preserved.'],
+      ['showTitles', 'Titles for bare web URLs', 'Display page titles without changing note contents. Explicit Markdown labels are always preserved. Links that look one-time or signed, such as sign-in or unsubscribe links, show the site name instead of being loaded.'],
       ['nativeLinks', 'Native note icons', 'Add an icon to internal note links while keeping Obsidian navigation, aliases, and hover previews.'],
     ] as const) {
       behavior.push({ name, desc, render: setting => { setting.addToggle(toggle => toggle.setValue(this.plugin.settings[key]).onChange(async value => {
