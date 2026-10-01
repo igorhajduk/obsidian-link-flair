@@ -52,9 +52,9 @@ Imported images are stored as static PNGs up to 128 pixels, work in both themes,
 
 ## Network and privacy
 
-**Remote web metadata is enabled by default.** Link Flair requests titles and favicons directly from linked websites using Obsidian's request API. Websites receive the requested URLs. No analytics, account, plugin backend, or third-party favicon service is used. App URIs, internal links, and bundled app icons do not require network requests.
+**Remote web metadata is enabled by default.** Link Flair requests titles and favicons directly from linked websites using Obsidian's request API. Websites receive the requested URLs. Bare URLs that look one-time, signed, or account-changing (for example `?token=`, `?code=`, signed download links, or `/unsubscribe` and `/logout` paths) are not opened automatically: they show the site name, and **Use page title as link text** loads the title on request. No analytics, account, plugin backend, or third-party favicon service is used. App URIs, internal links, and bundled app icons do not require network requests.
 
-Turn off **Remote web metadata** to stop automatic requests. Explicitly importing a website or image URL still makes requests to resolve and download its icon, including when automatic metadata is off. Already-sent requests cannot be cancelled. Derived metadata and custom icons are stored with plugin settings in `data.json`; your sync configuration may carry that data. Notes do not depend on this cache. See [network behavior and limits](docs/design.md#metadata-and-network-behavior).
+Turn off **Remote web metadata** to stop automatic requests. Explicitly importing a website or image URL still makes requests to resolve and download its icon, including when automatic metadata is off. Already-sent requests cannot be cancelled. Fetched titles and icons are cached on each device and are not synced. Settings and custom icons are stored in `data.json`, which your sync configuration may carry; changes synced from another device apply without a restart. Notes do not depend on the cache. See [network behavior and limits](docs/design.md#metadata-and-network-behavior).
 
 The copy commands write a link destination or Markdown link to the clipboard when invoked. Reading-view copy removes decorative icons from the selected content. Link Flair does not read existing system clipboard contents.
 

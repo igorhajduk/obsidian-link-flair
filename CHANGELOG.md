@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+- Cache fetched titles and icons on each device instead of in `data.json`, so sync carries only settings and custom icons. Existing caches move automatically.
+- Apply settings changed on another device through Sync without restarting Obsidian.
+- Stop loading bare URLs that look one-time, signed, or account-changing, such as token, sign-in code, unsubscribe, and sign-out links. They show the site name; the page-title command still loads a title on request.
+- Keep page titles for seven days instead of one.
+
+Tested on macOS, iPhone, and iPad.
+
 ## [0.2.0] - 2026-09-22
 
 - Add an offline icon and readable labels for Claude Code deep links using `claude://code/...`.

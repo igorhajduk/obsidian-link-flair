@@ -23,6 +23,7 @@
     "test:apps": "node scripts/smoke-supported-apps.mjs",
     "test:custom-icons": "node scripts/smoke-custom-icons.mjs",
     "test:favicons": "node scripts/smoke-favicons.mjs",
+    "test:storage": "node scripts/smoke-storage.mjs",
     "lab:prepare": "npm run build && node scripts/prepare-lab.mjs"
   },
   "devDependencies": {
@@ -39,6 +40,7 @@
     "esbuild": "0.28.2",
     "eslint": "10.10.0",
     "eslint-plugin-obsidianmd": "0.4.2",
+    "fake-indexeddb": "6.2.5",
     "globals": "17.12.0",
     "jsdom": "29.1.1",
     "obsidian": "1.13.1",

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MetadataService, metadataHeaders, type WebResponse } from '../src/metadata';
+import { MetadataService, metadataHeaders, sensitivePageUrl, type WebResponse } from '../src/metadata';
 
 function response(text: string, type = 'text/html', status = 200): WebResponse {
   return { status, headers: { 'content-type': type }, text, arrayBuffer: new TextEncoder().encode(text).buffer };
@@ -108,6 +108,66 @@ describe('metadata lifecycle', () => {
     service.ensure('https://example.com', true);
     expect(service.title('https://example.com')).toBe('Saved title');
     expect(request).not.toHaveBeenCalled();
+  });
+});
+
+describe('sensitive bare URLs', () => {
+  it.each([
+    'https://example.com/login?token=abc',
+    'https://example.com/auth/callback?code=abc&state=xyz',
+    'https://bucket.s3.amazonaws.com/file.pdf?X-Amz-Signature=abc&X-Amz-Credential=def',
+    'https://cdn.example.com/file?Expires=1&Signature=abc&Key-Pair-Id=k',
+    'https://maps.example.com/api?key=abc',
+    'https://example.com/reset?access_token=abc',
+    'https://news.example.com/email/unsubscribe/abc123',
+    'https://example.com/unsubscribe.php?id=1',
+    'https://example.com/account/logout',
+    'https://example.com/users/confirm/abc',
+    'https://example.com/password-reset/abc',
+    'https://example.com/invite/abc',
+    'https://example.com/list?email=me%40example.com',
+  ])('does not open %s automatically', href => {
+    expect(sensitivePageUrl(new URL(href))).toBe(true);
+  });
+
+  it.each([
+    'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42',
+    'https://github.com/obsidianmd/obsidian-releases/commit/0123456789abcdef0123456789abcdef01234567',
+    'https://docs.google.com/document/d/1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789abcdEF/edit?authuser=0',
+    'https://www.notion.so/Project-plan-0123456789abcdef0123456789abcdef',
+    'https://www.jetbrains.com/teamcity/download/',
+    'https://blog.example.com/how-to-verify-your-email',
+    'https://www.google.com/search?q=obsidian+plugins',
+  ])('keeps automatic titles for %s', href => {
+    expect(sensitivePageUrl(new URL(href))).toBe(false);
+  });
+
+  it('loads only the origin for a sensitive bare URL until a command asks for its title', async () => {
+    const request = vi.fn(async (url: string) => url.endsWith('/favicon.ico') ? response('icon', 'image/x-icon') : response('<title>Signed in</title>'));
+    const service = new MetadataService(request);
+    service.ensure('https://example.com/magic?token=secret', true);
+    await flush();
+    expect(request.mock.calls.map(call => call[0])).toEqual(['https://example.com/', 'https://example.com/favicon.ico']);
+    expect(service.title('https://example.com/magic?token=secret')).toBeUndefined();
+    service.ensure('https://example.com/magic?token=secret', true, true);
+    await flush();
+    expect(request.mock.calls.map(call => call[0])).toContain('https://example.com/magic?token=secret');
+    expect(service.title('https://example.com/magic?token=secret')).toBe('Signed in');
+  });
+
+  it('keeps titles for a week before requesting the page again', async () => {
+    vi.useFakeTimers();
+    const request = vi.fn(async (url: string) => url.endsWith('/favicon.ico') ? response('icon', 'image/x-icon') : response('<title>A page</title>'));
+    const service = new MetadataService(request);
+    service.ensure('https://example.com/page', true);
+    await vi.advanceTimersByTimeAsync(0);
+    const calls = request.mock.calls.length;
+    vi.setSystemTime(Date.now() + 6 * 86_400_000);
+    service.ensure('https://example.com/page', true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(request).toHaveBeenCalledTimes(calls);
+    expect(service.title('https://example.com/page')).toBe('A page');
+    service.dispose();
   });
 });
 

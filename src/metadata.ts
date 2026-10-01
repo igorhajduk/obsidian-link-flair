@@ -13,6 +13,7 @@ export function metadataHeaders(): Record<string, string> {
 export type IconTheme = 'light' | 'dark';
 export interface CacheEntry { key: string; expires: number; title?: string; icon?: string; iconDark?: string; iconVersion?: number; iconRetryAfter?: number }
 const DAY = 86_400_000;
+const TITLE_TTL = 7 * DAY;
 const MAX_ENTRIES = 128;
 const MAX_ICON_BYTES = 128 * 1024;
 const MAX_HTML_BYTES = 1024 * 1024;
@@ -79,20 +80,22 @@ export class MetadataService {
     return this.entry(`title:${url.href}`)?.title;
   }
 
-  ensure(href: string, title: boolean): void {
+  /** `explicit` marks a user command; rendering alone never opens a sensitive page. */
+  ensure(href: string, title: boolean, explicit = false): void {
     if (!this.enabled || this.disposed) return;
     const url = publicWebUrl(href);
     if (!url) return;
     url.hash = '';
-    if (!customIconFor(href, this.customIcons)) this.ensureIcon(url, title);
-    if (!title) return;
+    const page = title && (explicit || !sensitivePageUrl(url));
+    if (!customIconFor(href, this.customIcons)) this.ensureIcon(url, page);
+    if (!page) return;
     const key = `title:${url.href}`;
     this.load(key, async generation => {
       const doc = await this.document(url.href, generation);
       if (!doc) return {};
       const text = (doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || doc.querySelector('title')?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 512);
       return { title: text || undefined };
-    }, DAY);
+    }, TITLE_TTL);
   }
 
   private ensureIcon(url: URL, pageTitle: boolean): void {
@@ -205,6 +208,29 @@ export class MetadataService {
 
   clear(): void { this.generation++; this.pending.clear(); this.cache.clear(); this.drain(); this.emit(); }
   dispose(): void { this.disposed = true; this.generation++; this.drain(); this.listeners.clear(); }
+}
+
+const SENSITIVE_PARAM_PARTS = /token|secret|signature|passw|credential|apikey|accesskey|session|nonce|otp|jwt|unsubscribe/;
+const SENSITIVE_PARAMS = new Set(['sig', 'key', 'code', 'auth', 'state', 'ticket', 'hash', 'hmac', 'email', 'expires', 'policy', 'sid', 'pwd', 'pass']);
+const SENSITIVE_SEGMENT_PARTS = /unsubscribe|opt-?out|log-?out|sign-?out/;
+const SENSITIVE_SEGMENTS = /^(?:verify|verification|confirm|confirmation|activate|activation|magic(?:-?link)?|reset(?:-?password)?|password-?reset|invite|invitation|approve|accept|decline|cancel)$/;
+
+/**
+ * Loading a bare URL for its title is equivalent to opening it. Skip automatic
+ * loads of pages that look like one-time, signed, or account-changing links.
+ * A false positive only costs the title; the host remains as the label.
+ */
+export function sensitivePageUrl(url: URL): boolean {
+  for (const name of url.searchParams.keys()) {
+    const normalized = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (SENSITIVE_PARAMS.has(normalized) || SENSITIVE_PARAM_PARTS.test(normalized)) return true;
+  }
+  return url.pathname.split('/').some(raw => {
+    let segment = raw;
+    try { segment = decodeURIComponent(raw); } catch { /* Keep the raw segment. */ }
+    segment = segment.toLowerCase().replace(/\.[a-z0-9]+$/, '');
+    return SENSITIVE_SEGMENT_PARTS.test(segment) || SENSITIVE_SEGMENTS.test(segment);
+  });
 }
 
 /** Rank all declarations before limiting requests: large icons often come last. */
