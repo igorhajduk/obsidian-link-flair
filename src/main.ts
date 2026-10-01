@@ -1,9 +1,10 @@
 import { MarkdownView, Menu, Notice, Plugin, PluginSettingTab, Setting, requestUrl, type Editor, type MarkdownFileInfo, type SettingDefinitionItem, type SettingDefinition } from 'obsidian';
-import { linkFlairEditor, refreshFlair, type EditorHost } from './editor';
-import { classifyLink, markdownLink, readBracketLink, referenceId, BARE_LINK_PATTERN, trimBareUrl, type LinkTarget, type SourceLink } from './links';
+import { linkFlairEditor, linksIn, refreshFlair, type EditorHost } from './editor';
+import { classifyLink, markdownLink, referenceId, type LinkTarget, type SourceLink } from './links';
 import { MetadataService, metadataHeaders, type CacheEntry } from './metadata';
 import { ReadingFlair } from './reading';
 import type { EditorView } from '@codemirror/view';
+import { ensureSyntaxTree, syntaxTree } from '@codemirror/language';
 import { copyWithoutFlair } from './clipboard';
 import { IndexedDbCacheStore, type CacheStore } from './cache-store';
 import { loadSettings, appearanceCSS, defaultAppearance, APPEARANCE_RANGES, APP_ICON_SCALE_RANGE, type Settings } from './settings';
@@ -155,21 +156,13 @@ export default class LinkFlairPlugin extends Plugin implements EditorHost {
 
   private currentLink(editor: Editor, view: MarkdownView | MarkdownFileInfo): SourceLink | undefined {
     const cursor = editor.posToOffset(editor.getCursor());
-    const value = editor.getValue();
     const line = editor.getCursor().line;
-    const start = editor.posToOffset({ line, ch: 0 });
-    const end = start + editor.getLine(line).length;
-    const references = this.references(view.file?.path ?? '');
-    for (let index = value.indexOf('[', start); index >= start && index <= end; index = value.indexOf('[', index + 1)) {
-      const link = readBracketLink(value, index, references);
-      if (link && link.from <= cursor && cursor <= link.to) return link;
-    }
-    for (const match of value.slice(start, end).matchAll(BARE_LINK_PATTERN)) {
-      const href = trimBareUrl(match[0]);
-      const from = start + match.index;
-      const to = from + href.length;
-      if (from <= cursor && cursor <= to) return { from, to, labelFrom: from, labelTo: to, href, label: href, form: 'bare', internal: false };
-    }
+    const from = editor.posToOffset({ line, ch: 0 });
+    const to = from + editor.getLine(line).length;
+    const state = (editor as unknown as { cm?: EditorView }).cm?.state;
+    const links = state ? linksIn(state, [{ from, to }], this.references(view.file?.path ?? ''), ensureSyntaxTree(state, to, 200) ?? syntaxTree(state)) : [];
+    const link = links.find(link => link.from <= cursor && cursor <= link.to);
+    if (link) return link;
     new Notice('Select a position inside a link first.');
   }
 

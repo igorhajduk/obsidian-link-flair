@@ -14,7 +14,9 @@ npm run package
 
 `check` runs Obsidian ESLint checks, unit tests, TypeScript checking, and the esbuild bundle. `package` also writes an installable `dist/link-flair` directory and `dist/SHA256SUMS`. The Linux GitHub workflow runs these code/build checks, not an Obsidian UI session. It skips downloading Electron because this job does not launch the desktop harness.
 
-The unit suite covers link classification and source preservation, Markdown labels and references, metadata filtering and caching, concurrency and late results, appearance preference validation, and clipboard fidelity. Vitest reads `tests/**/*.test.ts` in jsdom. Tests do not contact destination apps or use personal vaults.
+The unit suite covers link classification and source preservation, Markdown labels and references, metadata filtering and caching, concurrency and late results, appearance preference validation, clipboard fidelity, Live Preview decorations and link commands, and Reading-view decoration and cleanup. Vitest reads `tests/**/*.test.ts` in jsdom, with a small stand-in for the runtime parts of the Obsidian API in `tests/support/`.
+
+Editor tests replay syntax tokens recorded from Obsidian in `tests/fixtures/editor-tokens.json`, so they use Obsidian's real token names without running the app. After an Obsidian update, or to add a case, edit the fixture texts and run `node scripts/record-editor-tokens.mjs` against the isolated harness below. Tests do not contact destination apps or use personal vaults.
 
 The recommended Obsidian linter runs without severity overrides. Regex exclusions for literal control characters have narrowly documented suppressions. Interface checks cover the declarative settings API and global settings search.
 

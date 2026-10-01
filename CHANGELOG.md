@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Fix link commands such as **Show link as URL** editing links inside inline code. Commands now find links the same way as Live Preview, skipping code, front matter, and comments.
+
 ## [0.2.1] - 2026-10-01
 
 - Cache fetched titles and icons on each device instead of in `data.json`, so sync carries only settings and custom icons. Existing caches move automatically.

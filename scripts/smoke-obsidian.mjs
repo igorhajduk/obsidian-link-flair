@@ -84,6 +84,28 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.markdown-source-view .link-flair-icon').length === 0);
   check('Source mode has no decorations');
 
+  for (const source of [true, false]) {
+    await mode('source', source);
+    const results = await page.evaluate(async () => {
+      const editor = app.workspace.getMostRecentLeaf().view.editor;
+      const run = (line, text) => {
+        editor.setCursor(line, editor.getLine(line).indexOf(text) + 2);
+        app.commands.executeCommandById('link-flair:show-url');
+        return editor.getValue();
+      };
+      const before = editor.getValue();
+      const codeLine = before.split('\n').findIndex(line => line.startsWith('Inline code stays untouched'));
+      const inCode = run(codeLine, 'things:///');
+      const authored = run(2, 'Deployment guide');
+      editor.undo();
+      return { before, inCode, authored, undone: editor.getValue() };
+    });
+    assert.equal(results.inCode, results.before);
+    assert(results.authored.split('\n')[2].startsWith('An authored [https://kubernetes.io/docs/concepts/workloads/controllers/deployment/]('));
+    assert.equal(results.undone, original);
+  }
+  check('Link commands ignore links inside inline code and edit authored links undoably in both editor modes');
+
   await mode('preview');
   await page.waitForFunction(() => document.querySelectorAll('.markdown-preview-view .link-flair-link').length >= 29);
   const reading = await page.locator('.markdown-preview-view .link-flair-link').evaluateAll(elements => elements.map(element => ({ href: element.getAttribute('href'), icons: element.querySelectorAll('.link-flair-icon').length, text: element.textContent })));

@@ -1,5 +1,5 @@
 import { syntaxTree } from '@codemirror/language';
-import { StateEffect, type Range } from '@codemirror/state';
+import { StateEffect, type EditorState, type Range } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from '@codemirror/view';
 import { editorInfoField, editorLivePreviewField, setTooltip } from 'obsidian';
 import { BARE_LINK_PATTERN, classifyLink, readBracketLink, trimBareUrl, type LinkTarget, type SourceLink } from './links';
@@ -18,15 +18,22 @@ export interface EditorHost {
 
 const excluded = /(?:codeblock|code-block|inline-code|frontmatter|comment|hmd-footnote|hmd-table-sep|formatting-link-string)/i;
 
-/** Obsidian's token classes delimit syntax; no custom whole-document parser. */
 export function visibleLinks(view: EditorView, references: ReadonlyMap<string, string>): SourceLink[] {
-  const tree = syntaxTree(view.state);
-  const doc = view.state.doc;
+  return linksIn(view.state, view.visibleRanges, references);
+}
+
+/**
+ * Obsidian's token classes delimit syntax; no custom whole-document parser.
+ * Rendering and link commands share this scan, so neither touches code,
+ * front matter, or comments.
+ */
+export function linksIn(state: EditorState, ranges: readonly { from: number; to: number }[], references: ReadonlyMap<string, string>, tree = syntaxTree(state)): SourceLink[] {
+  const doc = state.doc;
   const links: SourceLink[] = [];
   const blocked: Array<{ from: number; to: number }> = [];
   const seen = new Set<number>();
   const add = (link: SourceLink) => { if (!seen.has(link.from)) { seen.add(link.from); links.push(link); } };
-  for (const range of view.visibleRanges) {
+  for (const range of ranges) {
     tree.iterate({ from: range.from, to: range.to, enter(node) {
       if (excluded.test(node.name)) { blocked.push({ from: node.from, to: node.to }); return false; }
       if (node.name.includes('formatting-link') && !node.name.includes('image') && doc.sliceString(node.from, node.from + 1) === '[') {
