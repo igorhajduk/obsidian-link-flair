@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.2] - 2026-10-01
 
 - Fix link commands such as **Show link as URL** editing links inside inline code. Commands now find links the same way as Live Preview, skipping code, front matter, and comments.
 
