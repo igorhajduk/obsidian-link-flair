@@ -30,7 +30,7 @@ To install a local build:
 2. Copy `dist/link-flair` into your vault's `.obsidian/plugins/` directory.
 3. Reload Obsidian and enable **Link Flair** under **Settings → Community plugins**.
 
-Version 0.1.0 was tested on macOS, iPhone, and iPad. macOS testing used Obsidian 1.13.7; iPhone testing used Obsidian 1.13.7 (365). Windows and Linux UI testing is pending. Linux CI runs automated tests and build checks.
+Tested on macOS, iPhone, and iPad; release entries in the [changelog](CHANGELOG.md) note device testing. Windows and Linux UI testing is pending. Linux CI runs automated tests and build checks.
 
 ## Usage
 
